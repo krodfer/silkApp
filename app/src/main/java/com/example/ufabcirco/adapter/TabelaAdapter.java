@@ -26,11 +26,12 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
     private final OnMoveClickListener cellClickListener;
     private static final String TAG = "TabelaAdapter";
     private final RowScrollNotifier rowScrollNotifierCallback;
+    private int lastKnownScrollX = 0;
+
     public interface OnMoveClickListener { void onMoveClick(Pessoa pessoa, String move); }
     public interface RowScrollNotifier {
         void onRowScrolled(int scrollX, RecyclerView.ViewHolder originatedFromViewHolder);
     }
-
 
     public TabelaAdapter(List<Pessoa> initialPersonList, List<String> moveList, OnMoveClickListener cellClickListener,
                          RowScrollNotifier rowScrollNotifierCallback) {
@@ -46,8 +47,13 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
         notifyDataSetChanged();
     }
 
+    public void setHorizontalScrollPosition(int scrollX) {
+        this.lastKnownScrollX = scrollX;
+    }
+
     public void syncAllRowsToScroll(int scrollX, RecyclerView recyclerView, TabelaViewHolder excludedViewHolder) {
         if (recyclerView == null) return;
+        setHorizontalScrollPosition(scrollX);
         for (int i = 0; i < recyclerView.getChildCount(); i++) {
             View child = recyclerView.getChildAt(i);
             TabelaViewHolder vh = (TabelaViewHolder) recyclerView.getChildViewHolder(child);
@@ -73,6 +79,7 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
         }
         String move = moveList.get(position);
         holder.bind(move, personList, cellClickListener);
+        holder.syncScrollProgrammatically(lastKnownScrollX);
     }
 
     @Override
@@ -87,6 +94,7 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
         private final HorizontalScrollView statusCellsScrollView;
         private boolean isProgrammaticScroll = false;
         private final RowScrollNotifier rowScrollNotifier;
+        private final View.OnScrollChangeListener scrollListener;
 
 
         public TabelaViewHolder(@NonNull View itemView, RowScrollNotifier rowScrollNotifier) {
@@ -96,6 +104,14 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
             moveLetter = itemView.findViewById(R.id.text_view_move_letter);
             statusCellsContainer = itemView.findViewById(R.id.status_cells_container);
             statusCellsScrollView = itemView.findViewById(R.id.status_cells_scroll_view);
+
+            this.scrollListener = (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+                if (!isProgrammaticScroll && this.rowScrollNotifier != null) {
+                    this.rowScrollNotifier.onRowScrolled(scrollX, this);
+                }
+                isProgrammaticScroll = false;
+            };
+            statusCellsScrollView.setOnScrollChangeListener(scrollListener);
         }
 
         public void bind(String move, List<Pessoa> currentPersonList, OnMoveClickListener cellListener) {
@@ -141,13 +157,6 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
                 cell.setOnClickListener(v -> cellListener.onMoveClick(pessoa, move));
                 statusCellsContainer.addView(cell);
             }
-
-            statusCellsScrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-                if (!isProgrammaticScroll && rowScrollNotifier != null) {
-                    rowScrollNotifier.onRowScrolled(scrollX, this);
-                }
-                isProgrammaticScroll = false;
-            });
         }
 
         public void syncScrollProgrammatically(int scrollX) {

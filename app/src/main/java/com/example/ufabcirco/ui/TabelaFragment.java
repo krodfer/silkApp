@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/ufabcirco/ui/TabelaFragment.java
 package com.example.ufabcirco.ui;
 
 import android.app.Activity;
@@ -53,8 +52,7 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
     private ActivityResultLauncher<Intent> exportCsvLauncher;
     private ActivityResultLauncher<Intent> importCsvLauncher;
 
-    private boolean isHeaderUserScrolling = false;
-    private boolean isRowUserScrolling = false;
+    private boolean isSyncingScroll = false;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -119,7 +117,7 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
         moveList.add("Secretária");
         moveList.add("Arabesco");
         moveList.add("Arqueado");
-        moveList.add("Aviãozinho"); //meia lua
+        moveList.add("Aviãozinho");
         moveList.add("Caixão");
         moveList.add("Morcego");
         moveList.add("Ninja");
@@ -143,7 +141,7 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
         moveList.add("Subida Francesa");
         moveList.add("Subida Crochê");
         moveList.add("Subida Secretária");
-        moveList.add("Subida Aranha"); //macaco
+        moveList.add("Subida Aranha");
         moveList.add("Subida Escadinha");
         moveList.add("Subida Bombeiro");
         moveList.add("Subida de Braço");
@@ -175,14 +173,6 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
             if (pessoas != null) {
                 updateHeaders(pessoas);
                 tabelaAdapter.updatePersonList(pessoas);
-
-                if (headerNamesScrollView != null && recyclerViewTabela != null) {
-                    recyclerViewTabela.post(() -> {
-                        if(tabelaAdapter != null) {
-                            tabelaAdapter.syncAllRowsToScroll(headerNamesScrollView.getScrollX(), recyclerViewTabela, null);
-                        }
-                    });
-                }
             }
         });
 
@@ -200,32 +190,30 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
             Log.e(TAG, "headerNamesScrollView é nulo em setupScrollSync");
             return;
         }
-        headerNamesScrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-            if (isRowUserScrolling) {
-                return;
-            }
 
-            isHeaderUserScrolling = true;
+        headerNamesScrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+            if (isSyncingScroll) return;
+
+            isSyncingScroll = true;
             if (tabelaAdapter != null) {
                 tabelaAdapter.syncAllRowsToScroll(scrollX, recyclerViewTabela, null);
             }
-            isHeaderUserScrolling = false;
+            isSyncingScroll = false;
         });
     }
 
     @Override
     public void onRowScrolled(int scrollX, RecyclerView.ViewHolder originatedFromViewHolder) {
-        if (isHeaderUserScrolling) {
-            return;
-        }
-        isRowUserScrolling = true;
+        if (isSyncingScroll) return;
+
+        isSyncingScroll = true;
         if (headerNamesScrollView != null) {
             headerNamesScrollView.scrollTo(scrollX, 0);
         }
         if (tabelaAdapter != null && recyclerViewTabela != null && originatedFromViewHolder instanceof TabelaAdapter.TabelaViewHolder) {
             tabelaAdapter.syncAllRowsToScroll(scrollX, recyclerViewTabela, (TabelaAdapter.TabelaViewHolder) originatedFromViewHolder);
         }
-        isRowUserScrolling = false;
+        isSyncingScroll = false;
     }
 
 
