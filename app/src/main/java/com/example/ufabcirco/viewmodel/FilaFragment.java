@@ -1,4 +1,4 @@
-package com.example.ufabcirco.ui;
+package com.example.ufabcirco.viewmodel;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
@@ -165,10 +165,10 @@ public class FilaFragment extends Fragment {
 
         final EditText input = new EditText(requireContext());
         input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
-        input.setHint("Digite o nome ou parte do nome");
+        input.setHint("Digite parte do nome");
         builder.setView(input);
 
-        builder.setPositiveButton("Buscar", (dialog, which) -> {
+        builder.setPositiveButton("Adicionar", (dialog, which) -> {
             String partialName = input.getText().toString().trim();
             if (partialName.isEmpty()) {
                 Toast.makeText(getContext(), "O nome não pode ser vazio.", Toast.LENGTH_SHORT).show();
@@ -178,7 +178,7 @@ public class FilaFragment extends Fragment {
             List<Pessoa> matches = circoViewModel.findPeopleInMasterList(partialName);
 
             if (matches.isEmpty()) {
-                showCreateNewPersonDialog(partialName);
+                Toast.makeText(getContext(), "Ninguém encontrado na tabela com esse nome.", Toast.LENGTH_SHORT).show();
             } else if (matches.size() == 1) {
                 addPersonToQueue(matches.get(0));
             } else {
@@ -187,26 +187,6 @@ public class FilaFragment extends Fragment {
         });
         builder.setNegativeButton("Cancelar", (dialog, which) -> dialog.cancel());
         builder.show();
-    }
-
-    private void showCreateNewPersonDialog(String name) {
-        if (getContext() == null) return;
-        new AlertDialog.Builder(getContext())
-                .setTitle("Pessoa não encontrada")
-                .setMessage("Ninguém encontrado com o nome '"+ name +"'. Deseja criar e adicionar uma nova pessoa à fila?")
-                .setPositiveButton("Sim", (d, w) -> {
-                    String result = circoViewModel.createNewPersonAndAddToQueue(name);
-                    if (getContext() == null) return;
-                    if ("SUCCESS".equals(result)) {
-                        Toast.makeText(getContext(), name + " foi criado(a) e adicionado(a) à fila.", Toast.LENGTH_LONG).show();
-                    } else if ("DUPLICATE_MASTER".equals(result)) {
-                        Toast.makeText(getContext(), name + " já existe na tabela. Use a busca para adicioná-lo(a).", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(getContext(), "Não foi possível adicionar a pessoa.", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("Não", null)
-                .show();
     }
 
     private void showMultipleMatchesDialog(List<Pessoa> matches) {
@@ -231,7 +211,7 @@ public class FilaFragment extends Fragment {
             case "SUCCESS":
                 Toast.makeText(getContext(), pessoa.getNome() + " foi adicionado(a) à fila.", Toast.LENGTH_SHORT).show();
                 break;
-            case "DUPLICATE_QUEUE":
+            case "DUPLICATE":
                 Toast.makeText(getContext(), pessoa.getNome() + " já está na fila.", Toast.LENGTH_SHORT).show();
                 break;
             case "INVALID":

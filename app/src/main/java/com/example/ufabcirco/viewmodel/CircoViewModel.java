@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/ufabcirco/viewmodel/CircoViewModel.java
 package com.example.ufabcirco.viewmodel;
 
 import android.graphics.Color;
@@ -8,11 +7,10 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import com.example.ufabcirco.model.Pessoa;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 public class CircoViewModel extends ViewModel {
 
@@ -36,59 +34,40 @@ public class CircoViewModel extends ViewModel {
     public CircoViewModel() {
         Log.d(TAG, "Construtor CircoViewModel chamado. Criando lista inicial.");
         List<Pessoa> initialPeople = new ArrayList<>();
-        Pessoa kaique = new Pessoa("Kaique Ferreira");
-
-        //kaique.getMoveStatus().put("A", 2);
-
-        initialPeople.add(kaique);
+        initialPeople.add(new Pessoa("Kaique Ferreira"));
         _masterList.setValue(initialPeople);
 
         List<Pessoa> initialQueue = new ArrayList<>();
-        initialQueue.add(kaique);
+        initialQueue.add(initialPeople.get(0));
         _queueList.setValue(initialQueue);
     }
 
     public void cycleMoveStatus(Pessoa pessoa, String move) {
         if (pessoa == null || move == null) {
-            Log.e(TAG, "Tentativa de cycleMoveStatus com pessoa ou movimento nulo.");
             return;
         }
-
         List<Pessoa> currentMasterList = _masterList.getValue();
         if (currentMasterList == null) {
-            Log.e(TAG, "MasterList nula ao tentar cycleMoveStatus.");
             return;
         }
-
-        boolean personFoundAndUpdate = false;
         for (Pessoa p : currentMasterList) {
             if (p.getId().equals(pessoa.getId())) {
-                Map<String, Integer> statusMap = p.getMoveStatus();
-                int currentStatus = statusMap.getOrDefault(move, 0);
+                int currentStatus = p.getMoveStatus().getOrDefault(move, 0);
                 int nextStatus = (currentStatus + 1) % 4;
-                statusMap.put(move, nextStatus);
-                personFoundAndUpdate = true;
+                p.getMoveStatus().put(move, nextStatus);
                 break;
             }
         }
-        if (personFoundAndUpdate) {
-            _masterList.setValue(new ArrayList<>(currentMasterList));
-            Log.d(TAG, "Status do movimento '" + move + "' para '" + pessoa.getNome() + "' atualizado para " + pessoa.getMoveStatus().get(move));
-        } else {
-            Log.w(TAG, "Pessoa não encontrada na masterList para cycleMoveStatus: " + pessoa.getNome());
-        }
+        _masterList.setValue(new ArrayList<>(currentMasterList));
     }
 
     public void importMasterList(List<Pessoa> importedList) {
         if (importedList != null) {
-            Log.d(TAG, "ViewModel: importMasterList chamado com " + importedList.size() + " pessoas.");
             _masterList.setValue(new ArrayList<>(importedList));
             _queueList.setValue(new ArrayList<>());
             _selectedPessoaId.setValue(null);
             _selectionColor.setValue(Color.TRANSPARENT);
-            Log.d(TAG, "ViewModel: MasterList atualizada com " + importedList.size() + " pessoas. Fila e seleção limpas.");
         } else {
-            Log.w(TAG, "ViewModel: Tentativa de importar lista nula para masterList. Definindo como vazia.");
             _masterList.setValue(new ArrayList<>());
             _queueList.setValue(new ArrayList<>());
             _selectedPessoaId.setValue(null);
@@ -96,58 +75,89 @@ public class CircoViewModel extends ViewModel {
         }
     }
 
-    public String addPersonToQueue(String nome) {
-        if (nome == null || nome.trim().isEmpty()) {
-            Log.w(TAG, "Tentativa de adicionar pessoa com nome inválido/vazio à fila.");
-            return "INVALID_NAME";
+    public List<Pessoa> findPeopleInMasterList(String name) {
+        List<Pessoa> master = _masterList.getValue();
+        if (name == null || name.trim().isEmpty() || master == null) {
+            return new ArrayList<>();
         }
+        String trimmedSearchName = name.trim();
+        return master.stream()
+                .filter(person -> {
+                    String[] nameParts = person.getNome().split("\\s+");
+                    if (nameParts.length == 0) {
+                        return false;
+                    }
 
-        String trimmedNome = nome.trim();
+                    String firstName = nameParts[0];
+                    if (firstName.equalsIgnoreCase(trimmedSearchName)) {
+                        return true;
+                    }
+
+                    if (nameParts.length > 1) {
+                        String lastName = nameParts[nameParts.length - 1];
+                        if (lastName.equalsIgnoreCase(trimmedSearchName)) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                })
+                .collect(Collectors.toList());
+    }
+
+    public String createNewPersonAndAddToQueue(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            return "INVALID";
+        }
+        String finalName = name.trim();
         List<Pessoa> currentMasterList = _masterList.getValue() != null ? new ArrayList<>(_masterList.getValue()) : new ArrayList<>();
-        List<Pessoa> currentQueueList = _queueList.getValue() != null ? new ArrayList<>(_queueList.getValue()) : new ArrayList<>();
 
-        for (Pessoa p : currentQueueList) {
-            if (p.getNome().equalsIgnoreCase(trimmedNome)) {
-                Log.d(TAG, trimmedNome + " já está na fila.");
-                return "DUPLICATE_IN_QUEUE";
-            }
+        boolean alreadyExists = currentMasterList.stream().anyMatch(p -> p.getNome().equalsIgnoreCase(finalName));
+        if (alreadyExists) {
+            return "DUPLICATE_MASTER";
         }
 
-        Pessoa personToAddToQueue = null;
-        boolean foundInMaster = false;
-        int masterListIndex = -1;
+        Pessoa newPerson = new Pessoa(finalName);
+        currentMasterList.add(0, newPerson);
+        _masterList.setValue(currentMasterList);
 
-        for (int i = 0; i < currentMasterList.size(); i++) {
-            if (currentMasterList.get(i).getNome().equalsIgnoreCase(trimmedNome)) {
-                personToAddToQueue = currentMasterList.get(i);
-                foundInMaster = true;
+        List<Pessoa> currentQueueList = _queueList.getValue() != null ? new ArrayList<>(_queueList.getValue()) : new ArrayList<>();
+        currentQueueList.add(newPerson);
+        _queueList.setValue(currentQueueList);
+
+        return "SUCCESS";
+    }
+
+    public String addPersonToQueue(Pessoa personToAdd) {
+        if (personToAdd == null) {
+            return "INVALID";
+        }
+
+        List<Pessoa> currentQueueList = _queueList.getValue() != null ? new ArrayList<>(_queueList.getValue()) : new ArrayList<>();
+        boolean alreadyInQueue = currentQueueList.stream().anyMatch(p -> p.getId().equals(personToAdd.getId()));
+
+        if (alreadyInQueue) {
+            return "DUPLICATE_QUEUE";
+        }
+
+        List<Pessoa> currentMasterList = _masterList.getValue() != null ? new ArrayList<>(_masterList.getValue()) : new ArrayList<>();
+        int masterListIndex = -1;
+        for(int i = 0; i < currentMasterList.size(); i++){
+            if(currentMasterList.get(i).getId().equals(personToAdd.getId())){
                 masterListIndex = i;
                 break;
             }
         }
 
-        String resultMessage;
-        if (!foundInMaster) {
-            personToAddToQueue = new Pessoa(trimmedNome);
-            currentMasterList.add(0, personToAddToQueue);
+        if (masterListIndex > 0) {
+            Pessoa p = currentMasterList.remove(masterListIndex);
+            currentMasterList.add(0, p);
             _masterList.setValue(currentMasterList);
-            resultMessage = "CREATED_NEW";
-            Log.d(TAG, trimmedNome + " criado na tabela (no início).");
-        } else {
-            if (masterListIndex > 0) {
-                Pessoa p = currentMasterList.remove(masterListIndex);
-                currentMasterList.add(0, p);
-                _masterList.setValue(currentMasterList);
-            }
-            resultMessage = "EXISTED_IN_MASTER";
-            Log.d(TAG, trimmedNome + " já existia na tabela (e foi movido para o início se aplicável).");
         }
 
-        currentQueueList.add(personToAddToQueue);
+        currentQueueList.add(personToAdd);
         _queueList.setValue(currentQueueList);
-        Log.d(TAG, trimmedNome + " adicionado à fila.");
-
-        return resultMessage;
+        return "SUCCESS";
     }
 
     public void removePersonFromQueue(Pessoa pessoa) {
