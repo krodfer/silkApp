@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal">
 
-    <TextView
+    <com.example.ufabcirco.ui.custom.OutlineTextView
         android:id="@+id/text_view_move_letter"
         android:layout_width="200dp"
         android:layout_height="match_parent"
