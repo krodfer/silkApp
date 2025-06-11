@@ -17,6 +17,8 @@ public class MainActivity extends AppCompatActivity {
         ViewPager2 viewPager = findViewById(R.id.view_pager_main);
         TabLayout tabLayout = findViewById(R.id.tab_layout);
 
+        tabLayout.setTabIconTint(null);
+
         SectionsPagerAdapter sectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), getLifecycle());
         viewPager.setAdapter(sectionsPagerAdapter);
 
