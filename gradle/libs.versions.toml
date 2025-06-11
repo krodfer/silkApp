@@ -1,0 +1,38 @@
+[versions]
+agp = "8.5.2"
+kotlin = "1.9.23"
+junit = "4.13.2"
+junitVersion = "1.1.5"
+espressoCore = "3.5.1"
+appcompat = "1.6.1"
+material = "1.12.0"
+activity = "1.8.0"
+constraintlayout = "2.1.4"
+lifecycle = "2.6.1"
+fragment = "1.6.0"
+viewpager2 = "1.0.0" # Mantenha esta versão, ela é estável e funciona
+# materialDesign = "1.12.0" # Você pode remover esta linha para evitar confusão, já que 'material' será 1.12.0
+cardview = "1.0.0"
+coreKtx = "1.13.1"
+flexbox = "3.0.0"
+
+[libraries]
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" } # Esta linha agora usará 1.12.0
+activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+lifecycle-viewmodel = { group = "androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "lifecycle" }
+lifecycle-livedata = { group = "androidx.lifecycle", name = "lifecycle-livedata", version.ref = "lifecycle" }
+fragment-ktx = { group = "androidx.fragment", name = "fragment", version.ref = "fragment" }
+viewpager2 = { group = "androidx.viewpager2", name = "viewpager2", version.ref = "viewpager2" }
+cardview = { group = "androidx.cardview", name = "cardview", version.ref = "cardview" }
+core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+flexbox = { group = "com.google.android.flexbox", name = "flexbox", version.ref = "flexbox" } # <-- ADICIONE A BIBLIOTECA AQUI
+
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
