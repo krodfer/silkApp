@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.ufabcirco"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -39,6 +39,8 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     implementation(libs.flexbox)
+    implementation(libs.core.ktx)
+    implementation(libs.appcompat)
 
     testImplementation(libs.junit)
 

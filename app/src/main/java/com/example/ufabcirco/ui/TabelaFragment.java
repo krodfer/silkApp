@@ -1,12 +1,14 @@
 package com.example.ufabcirco.ui;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -38,7 +40,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollNotifier {
@@ -55,6 +58,9 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
     private ActivityResultLauncher<Intent> importCsvLauncher;
 
     private boolean isSyncingScroll = false;
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final Handler handler = new Handler(Looper.getMainLooper());
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -178,7 +184,7 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
     private void openCsvFile() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("text/*");
+        intent.setType("text/csv");
         try {
             importCsvLauncher.launch(intent);
         } catch (Exception e) {
@@ -187,107 +193,145 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
     }
 
     private void writeCsvToUri(Uri uri) {
-        if (getContext() == null) return;
-        try (OutputStream outputStream = getContext().getContentResolver().openOutputStream(uri);
-             OutputStreamWriter writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
+        Context context = getContext();
+        if (context == null) return;
 
-            List<Pessoa> personList = circoViewModel.getMasterList().getValue();
-            List<Movimento> moveList = circoViewModel.getMoveList().getValue();
-            if (personList == null || moveList == null || moveList.isEmpty()) {
-                Toast.makeText(getContext(), "Não há dados para exportar.", Toast.LENGTH_SHORT).show();
-                return;
-            }
+        ProgressDialog progressDialog = new ProgressDialog(context);
+        progressDialog.setMessage("Exportando... Por favor, aguarde.");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
 
-            StringBuilder moveNamesRow = new StringBuilder();
-            moveNamesRow.append("\"Movimento\"");
-            for (Movimento move : moveList) {
-                moveNamesRow.append(",\"").append(move.getNome().replace("\"", "\"\"")).append("\"");
-            }
-            writer.write(moveNamesRow.toString() + "\n");
+        executor.execute(() -> {
+            try (OutputStream outputStream = context.getContentResolver().openOutputStream(uri);
+                 OutputStreamWriter writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
 
-            StringBuilder typesRow = new StringBuilder();
-            typesRow.append("\"Tipo!\"");
-            for (Movimento move : moveList) {
-                typesRow.append(",").append(move.getTipo());
-            }
-            writer.write(typesRow.toString() + "\n");
+                List<Pessoa> personList = circoViewModel.getMasterList().getValue();
+                List<Movimento> moveList = circoViewModel.getMoveList().getValue();
 
-            StringBuilder difficultiesRow = new StringBuilder();
-            difficultiesRow.append("\"Dificuldade!\"");
-            for (Movimento move : moveList) {
-                difficultiesRow.append(",").append(move.getDificuldade());
-            }
-            writer.write(difficultiesRow.toString() + "\n");
-
-            for (Pessoa person : personList) {
-                StringBuilder personRow = new StringBuilder();
-                personRow.append("\"").append(person.getNome().replace("\"", "\"\"")).append("\"");
-                for (Movimento move : moveList) {
-                    personRow.append(",").append(person.getMoveStatus().getOrDefault(move.getNome(), 0));
+                if (personList == null || moveList == null || moveList.isEmpty()) {
+                    handler.post(() -> {
+                        progressDialog.dismiss();
+                        Toast.makeText(context, "Não há dados para exportar.", Toast.LENGTH_SHORT).show();
+                    });
+                    return;
                 }
-                writer.write(personRow.toString() + "\n");
-            }
 
-            writer.flush();
-            Toast.makeText(getContext(), "Tabela exportada com sucesso!", Toast.LENGTH_SHORT).show();
-        } catch (Exception e) {
-            Toast.makeText(getContext(), "Erro ao exportar tabela: " + e.getMessage(), Toast.LENGTH_LONG).show();
-        }
+                StringBuilder moveNamesRow = new StringBuilder();
+                moveNamesRow.append("\"Movimento\"");
+                for (Movimento move : moveList) {
+                    moveNamesRow.append(",\"").append(move.getNome().replace("\"", "\"\"")).append("\"");
+                }
+                writer.write(moveNamesRow.toString() + "\n");
+
+                StringBuilder typesRow = new StringBuilder();
+                typesRow.append("\"Tipo!\"");
+                for (Movimento move : moveList) {
+                    typesRow.append(",").append(move.getTipo());
+                }
+                writer.write(typesRow.toString() + "\n");
+
+                StringBuilder difficultiesRow = new StringBuilder();
+                difficultiesRow.append("\"Dificuldade!\"");
+                for (Movimento move : moveList) {
+                    difficultiesRow.append(",").append(move.getDificuldade());
+                }
+                writer.write(difficultiesRow.toString() + "\n");
+
+                for (Pessoa person : personList) {
+                    StringBuilder personRow = new StringBuilder();
+                    personRow.append("\"").append(person.getNome().replace("\"", "\"\"")).append("\"");
+                    for (Movimento move : moveList) {
+                        int status = person.getMoveStatus().getOrDefault(move.getNome(), 0);
+                        personRow.append(",").append(status);
+                    }
+                    writer.write(personRow.toString() + "\n");
+                }
+
+                writer.flush();
+                handler.post(() -> {
+                    progressDialog.dismiss();
+                    Toast.makeText(context, "Tabela exportada com sucesso!", Toast.LENGTH_SHORT).show();
+                });
+
+            } catch (Throwable t) {
+                handler.post(() -> {
+                    progressDialog.dismiss();
+                    Toast.makeText(context, "Erro fatal ao exportar: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                });
+                t.printStackTrace();
+            }
+        });
     }
 
     private void readCsvFromUri(Uri uri) {
-        if (getContext() == null) return;
-        List<Pessoa> importedPeople = new ArrayList<>();
-        List<Movimento> tempMoves = new ArrayList<>();
+        Context context = getContext();
+        if (context == null) return;
 
-        try (InputStream inputStream = getContext().getContentResolver().openInputStream(uri);
-             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+        ProgressDialog progressDialog = new ProgressDialog(context);
+        progressDialog.setMessage("Importando... Por favor, aguarde.");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
 
-            String[] moveNames = reader.readLine().split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
-            String[] types = reader.readLine().split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
-            String[] difficulties = reader.readLine().split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+        executor.execute(() -> {
+            try (InputStream inputStream = context.getContentResolver().openInputStream(uri);
+                 BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
 
-            if (moveNames.length <= 1 || types.length != moveNames.length || difficulties.length != moveNames.length) {
-                Toast.makeText(getContext(), "Formato do CSV inválido. Verifique as 3 primeiras linhas.", Toast.LENGTH_LONG).show();
-                return;
-            }
+                List<Pessoa> importedPeople = new ArrayList<>();
+                List<Movimento> tempMoves = new ArrayList<>();
+                List<String> moveNames = new ArrayList<>();
 
-            for (int i = 1; i < moveNames.length; i++) {
-                String name = moveNames[i].replace("\"", "").trim();
-                int type = Integer.parseInt(types[i].trim());
-                int difficulty = Integer.parseInt(difficulties[i].trim());
-                tempMoves.add(new Movimento(name, type, difficulty));
-            }
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.trim().isEmpty()) continue;
-                String[] values = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
-                String personName = values[0].replace("\"", "").trim();
-                Pessoa person = new Pessoa(personName);
-
-                for (int i = 1; i < values.length && i < moveNames.length; i++) {
-                    String moveName = moveNames[i].replace("\"", "").trim();
-                    int status = Integer.parseInt(values[i].trim());
-                    person.getMoveStatus().put(moveName, status);
+                String[] moveNamesArr = reader.readLine().split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+                for (int i = 1; i < moveNamesArr.length; i++) {
+                    moveNames.add(moveNamesArr[i].replace("\"", "").trim());
                 }
-                importedPeople.add(person);
+
+                String[] typesArr = reader.readLine().split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+                String[] difficultiesArr = reader.readLine().split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+
+                for (int i = 0; i < moveNames.size(); i++) {
+                    String name = moveNames.get(i);
+                    int type = Integer.parseInt(typesArr[i + 1].trim());
+                    int difficulty = Integer.parseInt(difficultiesArr[i + 1].trim());
+                    tempMoves.add(new Movimento(name, type, difficulty));
+                }
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.trim().isEmpty()) continue;
+                    String[] values = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+                    String personName = values[0].replace("\"", "").trim();
+                    if (personName.isEmpty()) continue;
+
+                    Pessoa person = new Pessoa(personName);
+                    for (int i = 0; i < moveNames.size(); i++) {
+                        if(values.length > i + 1) {
+                            int status = Integer.parseInt(values[i + 1].trim());
+                            person.getMoveStatus().put(moveNames.get(i), status);
+                        }
+                    }
+                    importedPeople.add(person);
+                }
+
+                List<Movimento> sortedMoves = tempMoves.stream()
+                        .sorted(Comparator.comparingInt(Movimento::getTipo).reversed()
+                                .thenComparing(Comparator.comparingInt(Movimento::getDificuldade).reversed()))
+                        .collect(Collectors.toList());
+
+                handler.post(() -> {
+                    progressDialog.dismiss();
+                    circoViewModel.setMoveList(sortedMoves);
+                    circoViewModel.importMasterList(importedPeople);
+                    Toast.makeText(context, "Tabela importada com sucesso!", Toast.LENGTH_SHORT).show();
+                });
+
+            } catch (Throwable t) {
+                handler.post(() -> {
+                    progressDialog.dismiss();
+                    Toast.makeText(context, "Erro fatal ao importar: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                });
+                t.printStackTrace();
             }
-
-            List<Movimento> sortedMoves = tempMoves.stream()
-                    .sorted(Comparator.comparingInt(Movimento::getTipo).reversed()
-                            .thenComparingInt(Movimento::getDificuldade))
-                    .collect(Collectors.toList());
-
-            circoViewModel.setMoveList(sortedMoves);
-            circoViewModel.importMasterList(importedPeople);
-
-            Toast.makeText(getContext(), "Tabela importada com sucesso!", Toast.LENGTH_SHORT).show();
-
-        } catch (Exception e) {
-            Toast.makeText(getContext(), "Erro ao importar arquivo: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            e.printStackTrace();
-        }
+        });
     }
 
     private void updateHeaders(List<Pessoa> personList) {
