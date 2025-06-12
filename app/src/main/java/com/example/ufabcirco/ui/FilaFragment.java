@@ -102,12 +102,9 @@ public class FilaFragment extends Fragment {
     }
 
     private void showProfileDialog(Pessoa pessoa) {
-        if(getContext() == null || pessoa == null) return;
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Perfil de " + pessoa.getNome())
-                .setMessage(formatMoveStatusForDialog(pessoa.getMoveStatus()))
-                .setPositiveButton("Fechar", null)
-                .show();
+        if (pessoa != null && getParentFragmentManager() != null) {
+            ProfileMenuFragment.newInstance(pessoa).show(getParentFragmentManager(), "ProfileMenu");
+        }
     }
 
     private String formatMoveStatusForDialog(Map<String, Integer> moveStatus) {

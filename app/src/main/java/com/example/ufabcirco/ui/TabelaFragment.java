@@ -3,6 +3,7 @@ package com.example.ufabcirco.ui;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -36,7 +37,6 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -49,7 +49,6 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
     private TabelaAdapter tabelaAdapter;
     private LinearLayout headerNamesContainer;
     private HorizontalScrollView headerNamesScrollView;
-    private List<Movimento> moveList;
     private FloatingActionButton fabExport, fabImport;
 
     private ActivityResultLauncher<Intent> exportCsvLauncher;
@@ -72,8 +71,6 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        moveList = new ArrayList<>();
-
         headerNamesContainer = view.findViewById(R.id.header_names_container);
         headerNamesScrollView = view.findViewById(R.id.header_names_scroll_view);
         recyclerViewTabela = view.findViewById(R.id.recycler_view_tabela);
@@ -82,7 +79,7 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
         fabExport = view.findViewById(R.id.fab_export_csv);
         fabImport = view.findViewById(R.id.fab_import_csv);
 
-        tabelaAdapter = new TabelaAdapter(new ArrayList<>(), moveList,
+        tabelaAdapter = new TabelaAdapter(new ArrayList<>(), new ArrayList<>(),
                 (pessoa, moveName) -> {
                     if (circoViewModel != null) {
                         circoViewModel.cycleMoveStatus(pessoa, moveName);
@@ -98,6 +95,12 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
             if (pessoas != null) {
                 updateHeaders(pessoas);
                 tabelaAdapter.updatePersonList(pessoas);
+            }
+        });
+
+        circoViewModel.getMoveList().observe(getViewLifecycleOwner(), moves -> {
+            if (moves != null) {
+                tabelaAdapter.updateMoveList(moves);
             }
         });
 
@@ -189,12 +192,12 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
              OutputStreamWriter writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
 
             List<Pessoa> personList = circoViewModel.getMasterList().getValue();
+            List<Movimento> moveList = circoViewModel.getMoveList().getValue();
             if (personList == null || moveList == null || moveList.isEmpty()) {
                 Toast.makeText(getContext(), "Não há dados para exportar.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Linha 1: Nomes dos movimentos
             StringBuilder moveNamesRow = new StringBuilder();
             moveNamesRow.append("\"Movimento\"");
             for (Movimento move : moveList) {
@@ -202,23 +205,20 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
             }
             writer.write(moveNamesRow.toString() + "\n");
 
-            // Linha 2: Tipos dos movimentos
             StringBuilder typesRow = new StringBuilder();
-            typesRow.append("\"Tipo\"");
+            typesRow.append("\"Tipo!\"");
             for (Movimento move : moveList) {
                 typesRow.append(",").append(move.getTipo());
             }
             writer.write(typesRow.toString() + "\n");
 
-            // Linha 3: Dificuldades dos movimentos
             StringBuilder difficultiesRow = new StringBuilder();
-            difficultiesRow.append("\"Dificuldade\"");
+            difficultiesRow.append("\"Dificuldade!\"");
             for (Movimento move : moveList) {
                 difficultiesRow.append(",").append(move.getDificuldade());
             }
             writer.write(difficultiesRow.toString() + "\n");
 
-            // Linhas seguintes: Pessoas e seus status
             for (Pessoa person : personList) {
                 StringBuilder personRow = new StringBuilder();
                 personRow.append("\"").append(person.getNome().replace("\"", "\"\"")).append("\"");
@@ -274,12 +274,12 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
                 importedPeople.add(person);
             }
 
-            this.moveList = tempMoves.stream()
+            List<Movimento> sortedMoves = tempMoves.stream()
                     .sorted(Comparator.comparingInt(Movimento::getTipo).reversed()
                             .thenComparingInt(Movimento::getDificuldade))
                     .collect(Collectors.toList());
 
-            tabelaAdapter.updateMoveList(this.moveList);
+            circoViewModel.setMoveList(sortedMoves);
             circoViewModel.importMasterList(importedPeople);
 
             Toast.makeText(getContext(), "Tabela importada com sucesso!", Toast.LENGTH_SHORT).show();
@@ -304,6 +304,20 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
             headerCell.setPadding(dpToPx(4, context), dpToPx(12, context), dpToPx(4, context), dpToPx(12, context));
             headerCell.setBackgroundResource(R.drawable.cell_border);
             headerNamesContainer.addView(headerCell);
+
+            if (circoViewModel.isInstructor(person.getNome())) {
+                headerCell.setTextColor(Color.parseColor("#800080"));
+                headerCell.setShadowLayer(2.5f, 0, 0, Color.BLACK);
+            }
+
+            headerCell.setOnClickListener(v -> showProfileDialog(person));
+        }
+    }
+
+    private void showProfileDialog(Pessoa pessoa) {
+        if (getContext() == null || pessoa == null) return;
+        if (getParentFragmentManager() != null) {
+            ProfileMenuFragment.newInstance(pessoa).show(getParentFragmentManager(), "ProfileMenu");
         }
     }
 
