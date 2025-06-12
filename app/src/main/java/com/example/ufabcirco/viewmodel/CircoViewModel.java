@@ -5,19 +5,27 @@ import android.util.Log;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
+import com.example.ufabcirco.model.Movimento;
 import com.example.ufabcirco.model.Pessoa;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class CircoViewModel extends ViewModel {
 
     private static final String TAG = "CircoViewModel";
+    private final Set<String> instructorNames = new HashSet<>();
 
     private final MutableLiveData<List<Pessoa>> _masterList = new MutableLiveData<>(new ArrayList<>());
     public LiveData<List<Pessoa>> getMasterList() { return _masterList; }
+
+    private final MutableLiveData<List<Movimento>> _moveList = new MutableLiveData<>(new ArrayList<>());
+    public LiveData<List<Movimento>> getMoveList() { return _moveList; }
 
     private final MutableLiveData<List<Pessoa>> _queueList = new MutableLiveData<>(new ArrayList<>());
     public LiveData<List<Pessoa>> getQueueList() { return _queueList; }
@@ -33,13 +41,29 @@ public class CircoViewModel extends ViewModel {
 
     public CircoViewModel() {
         Log.d(TAG, "Construtor CircoViewModel chamado. Criando lista inicial.");
+
+        instructorNames.addAll(Arrays.asList(
+                "Kaique Ferreira", "Sandy Netto", "Lucas Mendes", "Karin Yanagi",
+                "Amanda Andrade", "Yasmin Batista", "Gabriel Peres", "Fernando Militani",
+                "Dany Serrano", "Catarina Movio"
+        ));
+
         List<Pessoa> initialPeople = new ArrayList<>();
-        initialPeople.add(new Pessoa("Kaique Ferreira"));
+        Pessoa kaique = new Pessoa("Kaique Ferreira");
+        initialPeople.add(kaique);
         _masterList.setValue(initialPeople);
 
         List<Pessoa> initialQueue = new ArrayList<>();
         initialQueue.add(initialPeople.get(0));
         _queueList.setValue(initialQueue);
+    }
+
+    public boolean isInstructor(String personName) {
+        return instructorNames.contains(personName);
+    }
+
+    public void setMoveList(List<Movimento> moves) {
+        _moveList.setValue(moves);
     }
 
     public void cycleMoveStatus(Pessoa pessoa, String move) {
