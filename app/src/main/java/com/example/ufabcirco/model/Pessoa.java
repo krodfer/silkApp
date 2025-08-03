@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/ufabcirco/model/Pessoa.java
 package com.example.ufabcirco.model;
 
 import java.io.Serializable;
@@ -18,8 +17,20 @@ public class Pessoa implements Serializable {
         this.moveStatus = new HashMap<>();
     }
 
-    public String getId() { return id; }
-    public String getNome() { return nome; }
+    public Pessoa(String id, String nome) {
+        this.id = id;
+        this.nome = nome;
+        this.moveStatus = new HashMap<>();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
     public Map<String, Integer> getMoveStatus() {
         if (this.moveStatus == null) {
             this.moveStatus = new HashMap<>();
@@ -30,6 +41,7 @@ public class Pessoa implements Serializable {
     public void setNome(String nome) {
         this.nome = nome;
     }
+
     public void setMoveStatus(Map<String, Integer> moveStatus) {
         this.moveStatus = moveStatus;
     }
@@ -39,11 +51,11 @@ public class Pessoa implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Pessoa pessoa = (Pessoa) o;
-        return id.equals(pessoa.id);
+        return Objects.equals(nome, pessoa.nome) && Objects.equals(moveStatus, pessoa.moveStatus);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(nome, moveStatus);
     }
 }

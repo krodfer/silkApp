@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/ufabcirco/adapter/FilaAdapter.java
 package com.example.ufabcirco.adapter;
 
 import android.content.Context;
@@ -10,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.ufabcirco.R;
 import com.example.ufabcirco.model.Pessoa;
@@ -33,9 +33,11 @@ public class FilaAdapter extends RecyclerView.Adapter<FilaAdapter.FilaViewHolder
         this.onRemoveClickListener = onRemoveClickListener;
     }
 
-    public void setFilaPessoas(List<Pessoa> personList) {
-        this.personList = personList != null ? personList : new ArrayList<>();
-        notifyDataSetChanged();
+    public void setFilaPessoas(List<Pessoa> newPersonList) {
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new PessoaDiffCallback(this.personList, newPersonList));
+        this.personList.clear();
+        this.personList.addAll(newPersonList);
+        diffResult.dispatchUpdatesTo(this);
     }
 
     public void setSelectionState(String id, Integer color) {
@@ -125,6 +127,32 @@ public class FilaAdapter extends RecyclerView.Adapter<FilaAdapter.FilaViewHolder
 
             buttonRemover.setOnClickListener(v -> onRemoveClickListener.accept(pessoa));
             itemView.setOnClickListener(v -> onItemClickListener.accept(pessoa));
+        }
+    }
+
+    class PessoaDiffCallback extends DiffUtil.Callback {
+        private final List<Pessoa> oldList;
+        private final List<Pessoa> newList;
+
+        public PessoaDiffCallback(List<Pessoa> oldList, List<Pessoa> newList) {
+            this.oldList = oldList;
+            this.newList = newList;
+        }
+
+        @Override
+        public int getOldListSize() { return oldList.size(); }
+
+        @Override
+        public int getNewListSize() { return newList.size(); }
+
+        @Override
+        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+            return oldList.get(oldItemPosition).getId().equals(newList.get(newItemPosition).getId());
+        }
+
+        @Override
+        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+            return oldList.get(oldItemPosition).equals(newList.get(newItemPosition));
         }
     }
 }

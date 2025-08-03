@@ -1,11 +1,9 @@
 package com.example.ufabcirco.ui;
 
-import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Color;
-import android.net.Uri;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -19,8 +17,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -48,11 +44,8 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -65,9 +58,10 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollNotifier {
+
     private static final String SPREADSHEET_ID = "17g23jX5Su4rlUKW5Htq9pZRboW_5GxJieoYDlcTJe_w";
-    private static final String API_KEY = "AIzaSyC2Af7CSAT3Aees4gg1PMB3NmTPhdwVxUA"; // Substitua por sua chave de API real
-    private static final String RANGE = "Moves!A1:Z";
+    private static final String API_KEY = "AIzaSyC2Af7CSAT3Aees4gg1PMB3NmTPhdwVxUA";
+    private static final String RANGE = "Moves!A1:BZ100";
     private static final String TAG = "TabelaFragment";
 
     private CircoViewModel circoViewModel;
@@ -76,18 +70,28 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
     private LinearLayout headerNamesContainer;
     private HorizontalScrollView headerNamesScrollView;
     private FloatingActionButton fabExport, fabImport;
-    private ActivityResultLauncher<Intent> exportCsvLauncher;
-    private ActivityResultLauncher<Intent> importCsvLauncher;
 
     private boolean isSyncingScroll = false;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Context context;
 
+    private boolean isSyncing = false;
+    private long lastLocalModificationTime = 0;
+    private long lastRemoteSyncTime = 0;
+    private final int SYNC_INTERVAL_MS = 3000;
+
+    private final Runnable syncRunnable = new Runnable() {
+        @Override
+        public void run() {
+            syncData();
+            handler.postDelayed(this, SYNC_INTERVAL_MS);
+        }
+    };
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        this.context = getContext();
     }
 
     @Override
@@ -98,6 +102,7 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        this.context = requireContext();
 
         headerNamesContainer = view.findViewById(R.id.header_names_container);
         headerNamesScrollView = view.findViewById(R.id.header_names_scroll_view);
@@ -106,6 +111,8 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
 
         fabExport = view.findViewById(R.id.fab_export_csv);
         fabImport = view.findViewById(R.id.fab_import_csv);
+        fabExport.setVisibility(View.GONE);
+        fabImport.setVisibility(View.GONE);
 
         tabelaAdapter = new TabelaAdapter(new ArrayList<>(), new ArrayList<>(),
                 (pessoa, moveName) -> {
@@ -118,6 +125,13 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
         recyclerViewTabela.setAdapter(tabelaAdapter);
 
         circoViewModel = new ViewModelProvider(requireActivity()).get(CircoViewModel.class);
+
+        circoViewModel.getLocalModificationEvent().observe(getViewLifecycleOwner(), isModified -> {
+            if (Boolean.TRUE.equals(isModified)) {
+                lastLocalModificationTime = System.currentTimeMillis();
+                Log.d(TAG, "Notificação de modificação local recebida. lastLocalModificationTime atualizado.");
+            }
+        });
 
         circoViewModel.getMasterList().observe(getViewLifecycleOwner(), pessoas -> {
             if (pessoas != null) {
@@ -133,27 +147,43 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
         });
 
         setupScrollSync();
+        handler.post(syncRunnable);
+    }
 
-        fabImport.setOnClickListener(v -> readGoogleSheet());
-        fabExport.setOnClickListener(v -> {
-            List<List<Object>> dataToWrite = prepareDataForExport();
-            writeToGoogleSheet(SPREADSHEET_ID, RANGE, dataToWrite);
+    private void syncData() {
+        if (isSyncing || !isOnline()) {
+            return;
+        }
+        isSyncing = true;
+        executor.execute(() -> {
+            try {
+                if (lastLocalModificationTime > lastRemoteSyncTime) {
+                    Log.d(TAG, "Mudança local detectada, enviando para o remoto...");
+                    List<List<Object>> dataToWrite = prepareDataForExport();
+                    writeToGoogleSheet(SPREADSHEET_ID, RANGE, dataToWrite);
+                } else {
+                    Log.d(TAG, "Sincronizando do remoto...");
+                    readGoogleSheet();
+                }
+            } finally {
+                isSyncing = false;
+            }
         });
+    }
 
-        readGoogleSheet();
+    private boolean isOnline() {
+        if (context == null) return false;
+        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
     }
 
     private void readGoogleSheet() {
         if (context == null) return;
-        ProgressDialog progressDialog = new ProgressDialog(context);
-        progressDialog.setMessage("Sincronizando com a planilha... Por favor, aguarde.");
-        progressDialog.setCancelable(false);
-        progressDialog.show();
         executor.execute(() -> {
             HttpURLConnection urlConnection = null;
             try {
-                String urlString = "https://sheets.googleapis.com/v4/spreadsheets/"
-                        + SPREADSHEET_ID + "/values/" + RANGE + "?key=" + API_KEY;
+                String urlString = "https://sheets.googleapis.com/v4/spreadsheets/" + SPREADSHEET_ID + "/values/" + RANGE + "?key=" + API_KEY;
                 URL url = new URL(urlString);
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod("GET");
@@ -210,28 +240,63 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
                                     .thenComparing(Comparator.comparingInt(Movimento::getDificuldade).reversed()))
                             .collect(Collectors.toList());
 
-                    handler.post(() -> {
-                        progressDialog.dismiss();
-                        circoViewModel.setMoveList(sortedMoves);
-                        circoViewModel.importMasterList(importedPeople);
-                        Toast.makeText(context, "Planilha sincronizada com sucesso!", Toast.LENGTH_SHORT).show();
-                    });
+                    List<Pessoa> currentPeople = circoViewModel.getMasterList().getValue();
+                    List<Movimento> currentMoves = circoViewModel.getMoveList().getValue();
 
+                    if (!isDataEqual(currentPeople, importedPeople) || !isMovesEqual(currentMoves, sortedMoves)) {
+                        handler.post(() -> {
+                            if (isAdded()) {
+                                circoViewModel.setMoveList(sortedMoves);
+                                circoViewModel.importMasterList(importedPeople);
+                                lastRemoteSyncTime = System.currentTimeMillis();
+                            }
+                        });
+                    } else {
+                        lastRemoteSyncTime = System.currentTimeMillis();
+                        Log.d(TAG, "Dados remotos e locais são idênticos. Nenhuma atualização.");
+                    }
                 } else {
-                    throw new IOException("Erro na requisição: " + responseCode);
+                    Log.e(TAG, "Erro na requisição: " + responseCode);
                 }
             } catch (Throwable t) {
-                handler.post(() -> {
-                    progressDialog.dismiss();
-                    Toast.makeText(context, "Erro ao sincronizar: " + t.getMessage(), Toast.LENGTH_LONG).show();
-                });
                 Log.e(TAG, "Erro ao ler a planilha", t);
+                handler.post(() -> {
+                    if (isAdded()) {
+                        Toast.makeText(context, "Erro ao sincronizar: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
             } finally {
                 if (urlConnection != null) {
                     urlConnection.disconnect();
                 }
             }
         });
+    }
+
+    private boolean isDataEqual(List<Pessoa> list1, List<Pessoa> list2) {
+        if (list1 == null && list2 == null) return true;
+        if (list1 == null || list2 == null || list1.size() != list2.size()) {
+            return false;
+        }
+        for (int i = 0; i < list1.size(); i++) {
+            if (!list1.get(i).equals(list2.get(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isMovesEqual(List<Movimento> list1, List<Movimento> list2) {
+        if (list1 == null && list2 == null) return true;
+        if (list1 == null || list2 == null || list1.size() != list2.size()) {
+            return false;
+        }
+        for (int i = 0; i < list1.size(); i++) {
+            if (!list1.get(i).equals(list2.get(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private List<List<Object>> prepareDataForExport() {
@@ -278,7 +343,8 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
     private Sheets getSheetsService() throws Exception {
         String jsonKey = BuildConfig.GOOGLE_SHEETS_SERVICE_KEY;
         if (jsonKey.isEmpty()) {
-            throw new Exception("Chave da conta de serviço não encontrada.");
+            Log.e(TAG, "A chave da conta de serviço está vazia.");
+            throw new Exception("A chave da conta de serviço está vazia.");
         }
         GoogleCredential credential = GoogleCredential.fromStream(new ByteArrayInputStream(jsonKey.getBytes()))
                 .createScoped(Collections.singleton(SheetsScopes.SPREADSHEETS));
@@ -289,10 +355,6 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
 
     private void writeToGoogleSheet(String spreadsheetId, String range, List<List<Object>> dataToWrite) {
         if (context == null) return;
-        ProgressDialog progressDialog = new ProgressDialog(context);
-        progressDialog.setMessage("Atualizando planilha... Por favor, aguarde.");
-        progressDialog.setCancelable(false);
-        progressDialog.show();
         executor.execute(() -> {
             try {
                 Sheets sheetsService = getSheetsService();
@@ -301,15 +363,18 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
                         .setValueInputOption("RAW")
                         .execute();
                 handler.post(() -> {
-                    progressDialog.dismiss();
-                    Toast.makeText(context, "Planilha atualizada com sucesso!", Toast.LENGTH_SHORT).show();
+                    if (isAdded()) {
+                        lastRemoteSyncTime = System.currentTimeMillis();
+                        lastLocalModificationTime = lastRemoteSyncTime;
+                    }
                 });
             } catch (Exception e) {
-                handler.post(() -> {
-                    progressDialog.dismiss();
-                    Toast.makeText(context, "Erro ao escrever na planilha: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                });
                 Log.e(TAG, "Erro ao escrever na planilha", e);
+                handler.post(() -> {
+                    if (isAdded()) {
+                        Toast.makeText(context, "Erro ao escrever na planilha. Verifique a chave da conta de serviço e as permissões: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
             }
         });
     }
@@ -340,26 +405,48 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
     }
 
     private void updateHeaders(List<Pessoa> personList) {
-        headerNamesContainer.removeAllViews();
-        if (context == null || personList == null) return;
+        if (headerNamesContainer == null || context == null || personList == null) return;
 
-        for (Pessoa person : personList) {
-            TextView headerCell = new TextView(context);
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dpToPx(120, context), LinearLayout.LayoutParams.MATCH_PARENT);
-            headerCell.setLayoutParams(params);
-            headerCell.setText(person.getNome());
-            headerCell.setGravity(Gravity.CENTER);
-            headerCell.setPadding(dpToPx(4, context), dpToPx(12, context), dpToPx(4, context), dpToPx(12, context));
-            headerCell.setBackgroundResource(R.drawable.cell_border);
-            headerNamesContainer.addView(headerCell);
-
-            if (circoViewModel.isInstructor(person.getNome())) {
-                headerCell.setTextColor(Color.parseColor("#800080"));
-                headerCell.setShadowLayer(2.5f, 0, 0, Color.BLACK);
+        List<String> currentHeaderNames = new ArrayList<>();
+        for (int i = 0; i < headerNamesContainer.getChildCount(); i++) {
+            View child = headerNamesContainer.getChildAt(i);
+            if (child instanceof TextView) {
+                currentHeaderNames.add(((TextView) child).getText().toString());
             }
-
-            headerCell.setOnClickListener(v -> showProfileDialog(person));
         }
+
+        List<String> newHeaderNames = personList.stream()
+                .map(Pessoa::getNome)
+                .collect(Collectors.toList());
+
+        if (!currentHeaderNames.equals(newHeaderNames)) {
+            headerNamesContainer.removeAllViews();
+            if (context == null || personList == null) return;
+
+            for (Pessoa person : personList) {
+                TextView headerCell = new TextView(context);
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dpToPx(120, context), LinearLayout.LayoutParams.MATCH_PARENT);
+                headerCell.setLayoutParams(params);
+                headerCell.setText(person.getNome());
+                headerCell.setGravity(Gravity.CENTER);
+                headerCell.setPadding(dpToPx(4, context), dpToPx(12, context), dpToPx(4, context), dpToPx(12, context));
+                headerCell.setBackgroundResource(R.drawable.cell_border);
+                headerNamesContainer.addView(headerCell);
+
+                if (circoViewModel.isInstructor(person.getNome())) {
+                    headerCell.setTextColor(Color.parseColor("#800080"));
+                    headerCell.setShadowLayer(2.5f, 0, 0, Color.BLACK);
+                }
+
+                headerCell.setOnClickListener(v -> showProfileDialog(person));
+            }
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        handler.removeCallbacks(syncRunnable);
     }
 
     private void showProfileDialog(Pessoa pessoa) {

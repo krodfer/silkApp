@@ -9,6 +9,7 @@ import com.example.ufabcirco.model.Movimento;
 import com.example.ufabcirco.model.Pessoa;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -39,22 +40,21 @@ public class CircoViewModel extends ViewModel {
     private final MutableLiveData<Pessoa> _navigateToProfile = new MutableLiveData<>();
     public LiveData<Pessoa> getNavigateToProfile() { return _navigateToProfile; }
 
+    private final MutableLiveData<Boolean> _localModificationEvent = new MutableLiveData<>();
+    public LiveData<Boolean> getLocalModificationEvent() { return _localModificationEvent; }
+
     public CircoViewModel() {
         Log.d(TAG, "Construtor CircoViewModel chamado. Criando lista inicial.");
 
         instructorNames.addAll(Arrays.asList(
                 "Kaique Ferreira", "Sandy Netto", "Lucas Mendes", "Karin Yanagi",
-                "Amanda Andrade", "Yasmin Batista", "Gabriel Peres", "Fernando Militani",
-                "Dany Serrano", "Catarina Movio"
+                "Amanda Andrade", "Yasmin Batista", "Gabriel Ross", "Gabs Ross", "Fernando Militani",
+                "Dany Serrano", "Catarina Movio", "Gabriel Sgarbi", "M. Julio", "Giovanna Geloneze",
+                "Carla Gomes", "Sagai Yami"
         ));
 
-        List<Pessoa> initialPeople = new ArrayList<>();
-        Pessoa kaique = new Pessoa("Kaique Ferreira");
-        initialPeople.add(kaique);
-        _masterList.setValue(initialPeople);
 
         List<Pessoa> initialQueue = new ArrayList<>();
-        initialQueue.add(initialPeople.get(0));
         _queueList.setValue(initialQueue);
     }
 
@@ -63,7 +63,9 @@ public class CircoViewModel extends ViewModel {
     }
 
     public void setMoveList(List<Movimento> moves) {
-        _moveList.setValue(moves);
+        if (!Objects.equals(_moveList.getValue(), moves)) {
+            _moveList.setValue(moves);
+        }
     }
 
     public void cycleMoveStatus(Pessoa pessoa, String move) {
@@ -74,23 +76,56 @@ public class CircoViewModel extends ViewModel {
         if (currentMasterList == null) {
             return;
         }
+
+        List<Pessoa> updatedMasterList = new ArrayList<>(currentMasterList.size());
+        boolean hasChanged = false;
+
         for (Pessoa p : currentMasterList) {
             if (p.getId().equals(pessoa.getId())) {
-                int currentStatus = p.getMoveStatus().getOrDefault(move, 0);
+                Pessoa updatedPessoa = new Pessoa(p.getId(), p.getNome());
+                updatedPessoa.setMoveStatus(new HashMap<>(p.getMoveStatus()));
+
+                int currentStatus = updatedPessoa.getMoveStatus().getOrDefault(move, 0);
                 int nextStatus = (currentStatus + 1) % 4;
-                p.getMoveStatus().put(move, nextStatus);
-                break;
+                updatedPessoa.getMoveStatus().put(move, nextStatus);
+
+                updatedMasterList.add(updatedPessoa);
+                hasChanged = true;
+            } else {
+                updatedMasterList.add(p);
             }
         }
-        _masterList.setValue(new ArrayList<>(currentMasterList));
+
+        if (hasChanged) {
+            _masterList.setValue(updatedMasterList);
+            notifyLocalModification();
+        }
     }
 
     public void importMasterList(List<Pessoa> importedList) {
         if (importedList != null) {
-            _masterList.setValue(new ArrayList<>(importedList));
-            _queueList.setValue(new ArrayList<>());
-            _selectedPessoaId.setValue(null);
-            _selectionColor.setValue(Color.TRANSPARENT);
+            if (!Objects.equals(_masterList.getValue(), importedList)) {
+                _masterList.setValue(new ArrayList<>(importedList));
+
+                List<Pessoa> currentQueue = _queueList.getValue();
+                if (currentQueue != null) {
+                    List<Pessoa> updatedQueue = new ArrayList<>();
+                    for (Pessoa queuedPerson : currentQueue) {
+                        Pessoa updatedPerson = importedList.stream()
+                                .filter(p -> p.getId().equals(queuedPerson.getId()))
+                                .findFirst()
+                                .orElse(queuedPerson);
+                        updatedQueue.add(updatedPerson);
+                    }
+                    _queueList.setValue(updatedQueue);
+                }
+
+                String selectedId = _selectedPessoaId.getValue();
+                if (selectedId != null && (currentQueue == null || currentQueue.stream().noneMatch(p -> p.getId().equals(selectedId)))) {
+                    _selectedPessoaId.setValue(null);
+                    _selectionColor.setValue(Color.TRANSPARENT);
+                }
+            }
         } else {
             _masterList.setValue(new ArrayList<>());
             _queueList.setValue(new ArrayList<>());
@@ -148,6 +183,7 @@ public class CircoViewModel extends ViewModel {
         List<Pessoa> currentQueueList = _queueList.getValue() != null ? new ArrayList<>(_queueList.getValue()) : new ArrayList<>();
         currentQueueList.add(newPerson);
         _queueList.setValue(currentQueueList);
+        notifyLocalModification();
 
         return "SUCCESS";
     }
@@ -166,8 +202,8 @@ public class CircoViewModel extends ViewModel {
 
         List<Pessoa> currentMasterList = _masterList.getValue() != null ? new ArrayList<>(_masterList.getValue()) : new ArrayList<>();
         int masterListIndex = -1;
-        for(int i = 0; i < currentMasterList.size(); i++){
-            if(currentMasterList.get(i).getId().equals(personToAdd.getId())){
+        for (int i = 0; i < currentMasterList.size(); i++) {
+            if (currentMasterList.get(i).getId().equals(personToAdd.getId())) {
                 masterListIndex = i;
                 break;
             }
@@ -181,6 +217,8 @@ public class CircoViewModel extends ViewModel {
 
         currentQueueList.add(personToAdd);
         _queueList.setValue(currentQueueList);
+        notifyLocalModification();
+
         return "SUCCESS";
     }
 
@@ -190,10 +228,11 @@ public class CircoViewModel extends ViewModel {
             ArrayList<Pessoa> newList = new ArrayList<>(currentQueueList);
             if (newList.remove(pessoa)) {
                 _queueList.setValue(newList);
-                if(Objects.equals(pessoa.getId(), _selectedPessoaId.getValue())){
+                if (Objects.equals(pessoa.getId(), _selectedPessoaId.getValue())) {
                     _selectedPessoaId.setValue(null);
                     _selectionColor.setValue(Color.TRANSPARENT);
                 }
+                notifyLocalModification();
             }
         }
     }
@@ -223,5 +262,9 @@ public class CircoViewModel extends ViewModel {
         final float saturation = 0.5f;
         final float lightness = 0.9f;
         return Color.HSVToColor(new float[]{hue, saturation, lightness});
+    }
+
+    private void notifyLocalModification() {
+        _localModificationEvent.setValue(true);
     }
 }

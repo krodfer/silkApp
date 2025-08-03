@@ -31,11 +31,11 @@ public class Movimento implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Movimento movimento = (Movimento) o;
-        return Objects.equals(nome, movimento.nome);
+        return tipo == movimento.tipo && dificuldade == movimento.dificuldade && Objects.equals(nome, movimento.nome);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(nome);
+        return Objects.hash(nome, tipo, dificuldade);
     }
 }
