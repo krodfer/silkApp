@@ -42,14 +42,28 @@ public class OutlineTextView extends AppCompatTextView {
             Paint paint = getPaint();
             int currentTextColor = getCurrentTextColor();
 
+            Paint.Style originalStyle = paint.getStyle();
+            float originalStrokeWidth = paint.getStrokeWidth();
+
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(outlineWidth);
             setTextColor(outlineColor);
             super.onDraw(canvas);
 
-            paint.setStyle(Paint.Style.FILL);
+            paint.setStyle(originalStyle);
+            paint.setStrokeWidth(originalStrokeWidth);
             setTextColor(currentTextColor);
         }
+
         super.onDraw(canvas);
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+
+        int newHeight   = (int) (getMeasuredHeight() + outlineWidth * 2);
+        int newWidth    = (int) (getMeasuredWidth() + outlineWidth * 2);
+        setMeasuredDimension(newWidth, newHeight);
     }
 }

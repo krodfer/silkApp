@@ -5,22 +5,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
-    android:weightSum="3"
-    android:clipChildren="false">
+    android:weightSum="3">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_weight="2"
-        android:clipChildren="false">
+        android:layout_weight="2">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view_galeria"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:clipChildren="false"
-            android:clipToPadding="false"
-            android:paddingTop="53dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -47,8 +42,23 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:visibility="visible" />
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.example.ufabcirco.ui.custom.OutlineTextView
+            android:id="@+id/text_view_global_post_title_above"
+            style="@style/GlobalTitleStyle"
+            tools:text="Título Acima" />
+
+        <com.example.ufabcirco.ui.custom.OutlineTextView
+            android:id="@+id/text_view_global_post_title_center"
+            style="@style/GlobalTitleStyle"
+            tools:text="Título Central" />
+
+        <com.example.ufabcirco.ui.custom.OutlineTextView
+            android:id="@+id/text_view_global_post_title_below"
+            style="@style/GlobalTitleStyle"
+            tools:text="Título Abaixo" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <LinearLayout
@@ -77,7 +87,6 @@
             android:gravity="center_horizontal"
             android:text="Exemplo 1"
             android:textSize="16sp" />
-
         <TextView
             android:id="@+id/filter_exemplo_2"
             style="@style/Widget.AppCompat.Button.Borderless"
@@ -87,7 +96,6 @@
             android:gravity="center_horizontal"
             android:text="Exemplo 2"
             android:textSize="16sp" />
-
         <TextView
             android:id="@+id/filter_exemplo_3"
             style="@style/Widget.AppCompat.Button.Borderless"
@@ -99,5 +107,4 @@
             android:textSize="16sp" />
 
     </LinearLayout>
-
 </LinearLayout>

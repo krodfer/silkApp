@@ -62,27 +62,20 @@ public class CircoViewModel extends ViewModel {
                 "Kaique Ferreira", "Sandy Netto", "Lucas Mendes", "Karin Yanagi",
                 "Amanda Andrade", "Yasmin Batista", "Gabriel Ross", "Gabs Ross", "Fernando Militani",
                 "Dany Serrano", "Catarina Movio", "Gabriel Sgarbi", "M. Julio", "Giovanna Geloneze",
-                "Carla Gomes", "Sagai Yami"
+                "Carla Gomes", "Sagai Yami", "Bibi Souza"
         ));
 
-        List<Pessoa> initialPeople = new ArrayList<>();
-        Pessoa kaique = new Pessoa("Kaique Ferreira");
-        initialPeople.add(kaique);
-        _masterList.setValue(initialPeople);
-
         List<Pessoa> initialQueue = new ArrayList<>();
-        initialQueue.add(initialPeople.get(0));
         _queueList.setValue(initialQueue);
 
         List<Post> hardcodedPosts = new ArrayList<>();
-        String linkExemplo = "https://cdn.discordapp.com/attachments/497867317728772106/1155840915525615696/ssstwitter.com_1695475669611.mp4?ex=6890a53c&is=688f53bc&hm=1b9b92b72ba08e9836b38940350990077e3f2ac9ab72bbc23f873cdc742d968f&";
         List<String> tagsExemplo = Arrays.asList("video", "porto", "chaveDeCintura");
 
-        hardcodedPosts.add(new Post(linkExemplo, tagsExemplo, "Porto Chave de Cintura", 1, 3));
-        hardcodedPosts.add(new Post(linkExemplo, tagsExemplo, "Outro Movimento", 2, 2));
-        hardcodedPosts.add(new Post(linkExemplo, tagsExemplo, "Porto Chave de Cintura", 1, 3));
-        hardcodedPosts.add(new Post(linkExemplo, tagsExemplo, "Movimento Diferente", 3, 1));
-        hardcodedPosts.add(new Post(linkExemplo, tagsExemplo, "Porto Chave de Cintura", 1, 3));
+        hardcodedPosts.add(new Post("https://cdn.discordapp.com/attachments/1128756976457887844/1401769722176999544/YouCut_20230712_161923714_1.mp4?ex=68917b49&is=689029c9&hm=fe7e5266f691fb23def898d71194de0d6030254a2e97d195f0bf5af457defa37&", tagsExemplo, "Chave de Cintura & Giro", 1, 3));
+        hardcodedPosts.add(new Post("https://cdn.discordapp.com/attachments/1128756976457887844/1401774268165128313/YouCut_20230726_173338063_1.mp4?ex=68917f85&is=68902e05&hm=9faf7d350aa1c88c4b742eddb91505c4af685a7e48edffc71ee06e75fb9f871c&", tagsExemplo, "Escorpião rei & Espacate", 2, 2));
+        hardcodedPosts.add(new Post("https://cdn.discordapp.com/attachments/1128756976457887844/1401775445640478741/YouCut_20230726_192137111.mp4?ex=6891809d&is=68902f1d&hm=fbfd65ba037d7506b86830da716b7788e24589541c800b160777c0c7c639c90d&", tagsExemplo, "Subida Crochê & Chave de Cintura", 1, 3));
+        hardcodedPosts.add(new Post("https://cdn.discordapp.com/attachments/1128756976457887844/1401775812860186665/ssstik.io_aerialsmarcela_1749163989596.mp4?ex=689180f5&is=68902f75&hm=c1fc3db0d3bdbe81f974d2a19d0df7c78bca921232c21a679a83a821cd0f2ac0&", tagsExemplo, "Espacate", 3, 1));
+        hardcodedPosts.add(new Post("https://cdn.discordapp.com/attachments/1128756976457887844/1401776227706081380/videoBaixado-112.mp4?ex=68918158&is=68902fd8&hm=23275d611a8f390601780d36e472c95b4603c6f0ac336ca5b58a29ae31a1afa7&", tagsExemplo, "Super homem", 1, 3));
 
         _allPosts.setValue(hardcodedPosts);
         shuffleAndFilterPosts(null);

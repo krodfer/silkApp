@@ -2,7 +2,6 @@ package com.example.ufabcirco.adapter;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
 import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,10 +12,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.ufabcirco.R;
 import com.example.ufabcirco.model.Post;
 import com.example.ufabcirco.ui.FullscreenVideoActivity;
-import com.example.ufabcirco.ui.custom.OutlineTextView;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public class GaleriaAdapter extends RecyclerView.Adapter<GaleriaAdapter.PostViewHolder> {
 
@@ -35,6 +32,13 @@ public class GaleriaAdapter extends RecyclerView.Adapter<GaleriaAdapter.PostView
 
     public int getPostCount() {
         return postList.size();
+    }
+
+    public Post getPostAt(int position) {
+        if (postList.isEmpty() || position < 0) {
+            return null;
+        }
+        return postList.get(position % postList.size());
     }
 
     @NonNull
@@ -85,22 +89,15 @@ public class GaleriaAdapter extends RecyclerView.Adapter<GaleriaAdapter.PostView
 
     public static class PostViewHolder extends RecyclerView.ViewHolder {
         private final VideoView videoView;
-        private final OutlineTextView textViewTitle;
         private String videoUrl;
 
         public PostViewHolder(@NonNull View itemView) {
             super(itemView);
             videoView = itemView.findViewById(R.id.video_view_post);
-            textViewTitle = itemView.findViewById(R.id.text_view_post_title);
         }
 
         public void bind(Post post) {
-            textViewTitle.setText(post.getMovimentoNome());
             this.videoUrl = post.getUrl();
-
-            int randomPastelColor = generateRandomPastelColor();
-            textViewTitle.setTextColor(randomPastelColor);
-            textViewTitle.setOutlineColor(Color.BLACK);
 
             if (videoUrl != null && !videoUrl.isEmpty()) {
                 Uri uri = Uri.parse(videoUrl);
@@ -120,14 +117,6 @@ public class GaleriaAdapter extends RecyclerView.Adapter<GaleriaAdapter.PostView
 
         private void setupVideoPlayback() {
             videoView.setOnPreparedListener(mp -> mp.setLooping(true));
-        }
-
-        private int generateRandomPastelColor() {
-            Random random = new Random();
-            final float hue = random.nextFloat() * 360;
-            final float saturation = 0.5f;
-            final float lightness = 0.9f;
-            return Color.HSVToColor(new float[]{hue, saturation, lightness});
         }
 
         public void startVideo() {
