@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/ufabcirco/ui/PlaceholderFragment.java
 package com.example.ufabcirco.ui;
 
 import android.os.Bundle;

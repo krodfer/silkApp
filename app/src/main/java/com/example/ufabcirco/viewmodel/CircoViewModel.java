@@ -7,8 +7,10 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import com.example.ufabcirco.model.Movimento;
 import com.example.ufabcirco.model.Pessoa;
+import com.example.ufabcirco.model.Post;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -43,6 +45,16 @@ public class CircoViewModel extends ViewModel {
     private final MutableLiveData<Boolean> _localModificationEvent = new MutableLiveData<>();
     public LiveData<Boolean> getLocalModificationEvent() { return _localModificationEvent; }
 
+    private final MutableLiveData<List<Post>> _allPosts = new MutableLiveData<>(new ArrayList<>());
+    private final MutableLiveData<List<Post>> _filteredPosts = new MutableLiveData<>(new ArrayList<>());
+    public LiveData<List<Post>> getFilteredPosts() { return _filteredPosts; }
+
+    private final MutableLiveData<String> _galleryFilter = new MutableLiveData<>(null);
+    public LiveData<String> getGalleryFilter() { return _galleryFilter; }
+
+    private List<Post> shuffledPosts = new ArrayList<>();
+    private int shuffledPostsIndex = 0;
+
     public CircoViewModel() {
         Log.d(TAG, "Construtor CircoViewModel chamado. Criando lista inicial.");
 
@@ -53,9 +65,27 @@ public class CircoViewModel extends ViewModel {
                 "Carla Gomes", "Sagai Yami"
         ));
 
+        List<Pessoa> initialPeople = new ArrayList<>();
+        Pessoa kaique = new Pessoa("Kaique Ferreira");
+        initialPeople.add(kaique);
+        _masterList.setValue(initialPeople);
 
         List<Pessoa> initialQueue = new ArrayList<>();
+        initialQueue.add(initialPeople.get(0));
         _queueList.setValue(initialQueue);
+
+        List<Post> hardcodedPosts = new ArrayList<>();
+        String linkExemplo = "https://cdn.discordapp.com/attachments/497867317728772106/1155840915525615696/ssstwitter.com_1695475669611.mp4?ex=6890a53c&is=688f53bc&hm=1b9b92b72ba08e9836b38940350990077e3f2ac9ab72bbc23f873cdc742d968f&";
+        List<String> tagsExemplo = Arrays.asList("video", "porto", "chaveDeCintura");
+
+        hardcodedPosts.add(new Post(linkExemplo, tagsExemplo, "Porto Chave de Cintura", 1, 3));
+        hardcodedPosts.add(new Post(linkExemplo, tagsExemplo, "Outro Movimento", 2, 2));
+        hardcodedPosts.add(new Post(linkExemplo, tagsExemplo, "Porto Chave de Cintura", 1, 3));
+        hardcodedPosts.add(new Post(linkExemplo, tagsExemplo, "Movimento Diferente", 3, 1));
+        hardcodedPosts.add(new Post(linkExemplo, tagsExemplo, "Porto Chave de Cintura", 1, 3));
+
+        _allPosts.setValue(hardcodedPosts);
+        shuffleAndFilterPosts(null);
     }
 
     public boolean isInstructor(String personName) {
@@ -266,5 +296,53 @@ public class CircoViewModel extends ViewModel {
 
     private void notifyLocalModification() {
         _localModificationEvent.setValue(true);
+    }
+
+    public void setAllPosts(List<Post> allPosts) {
+        _allPosts.setValue(allPosts);
+        shuffleAndFilterPosts(null);
+    }
+
+    public void setGalleryFilter(String filter) {
+        _galleryFilter.setValue(filter);
+        shuffleAndFilterPosts(filter);
+    }
+
+    private void shuffleAndFilterPosts(String filter) {
+        List<Post> postsToFilter = _allPosts.getValue() != null ? new ArrayList<>(_allPosts.getValue()) : new ArrayList<>();
+
+        if (filter != null) {
+            postsToFilter = postsToFilter.stream()
+                    .filter(p -> p.getTags().contains(filter) || p.getMovimentoNome().equals(filter))
+                    .collect(Collectors.toList());
+        }
+
+        shuffledPosts = new ArrayList<>(postsToFilter);
+        Collections.shuffle(shuffledPosts);
+        shuffledPostsIndex = 0;
+
+        _filteredPosts.setValue(new ArrayList<>());
+        loadMorePosts();
+    }
+
+    public void loadMorePosts() {
+        if (shuffledPosts.isEmpty()) {
+            return;
+        }
+
+        int chunkSize = 5;
+        List<Post> currentFilteredPosts = _filteredPosts.getValue() != null ? new ArrayList<>(_filteredPosts.getValue()) : new ArrayList<>();
+
+        if (shuffledPostsIndex >= shuffledPosts.size()) {
+            Collections.shuffle(shuffledPosts);
+            shuffledPostsIndex = 0;
+        }
+
+        for (int i = 0; i < chunkSize && shuffledPostsIndex < shuffledPosts.size(); i++) {
+            currentFilteredPosts.add(shuffledPosts.get(shuffledPostsIndex));
+            shuffledPostsIndex++;
+        }
+
+        _filteredPosts.setValue(currentFilteredPosts);
     }
 }

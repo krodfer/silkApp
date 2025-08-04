@@ -11,6 +11,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.ufabcirco.R;
 import com.example.ufabcirco.model.Movimento;
@@ -18,11 +19,11 @@ import com.example.ufabcirco.model.Pessoa;
 import com.example.ufabcirco.ui.custom.OutlineTextView;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 
 public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaViewHolder> {
 
-    private List<Pessoa> personList;
+    private List<Pessoa> pessoaList;
     private List<Movimento> moveList;
     private final OnMoveClickListener cellClickListener;
     private static final String TAG = "TabelaAdapter";
@@ -36,22 +37,24 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
 
     public TabelaAdapter(List<Pessoa> initialPersonList, List<Movimento> initialMoveList, OnMoveClickListener cellClickListener,
                          RowScrollNotifier rowScrollNotifierCallback) {
-        this.personList = new ArrayList<>(initialPersonList);
+        this.pessoaList = new ArrayList<>(initialPersonList);
         this.moveList = new ArrayList<>(initialMoveList);
         this.cellClickListener = cellClickListener;
         this.rowScrollNotifierCallback = rowScrollNotifierCallback;
     }
 
     public void updatePersonList(List<Pessoa> newPersonList) {
-        this.personList.clear();
-        this.personList.addAll(newPersonList);
-        notifyDataSetChanged();
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new PessoaDiffCallback(this.pessoaList, newPersonList));
+        this.pessoaList.clear();
+        this.pessoaList.addAll(newPersonList);
+        diffResult.dispatchUpdatesTo(this);
     }
 
     public void updateMoveList(List<Movimento> newMoveList) {
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new MovimentoDiffCallback(this.moveList, newMoveList));
         this.moveList.clear();
         this.moveList.addAll(newMoveList);
-        notifyDataSetChanged();
+        diffResult.dispatchUpdatesTo(this);
     }
 
     public void setHorizontalScrollPosition(int scrollX) {
@@ -74,7 +77,7 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
     @Override
     public TabelaViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_tabela_row, parent, false);
-        return new TabelaViewHolder(view, rowScrollNotifierCallback);
+        return new TabelaViewHolder(view, rowScrollNotifierCallback, cellClickListener);
     }
 
     @Override
@@ -83,7 +86,7 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
             return;
         }
         Movimento move = moveList.get(position);
-        holder.bind(move, personList, cellClickListener);
+        holder.bind(move, pessoaList);
         holder.syncScrollProgrammatically(lastKnownScrollX);
     }
 
@@ -99,12 +102,14 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
         private final HorizontalScrollView statusCellsScrollView;
         private boolean isProgrammaticScroll = false;
         private final RowScrollNotifier rowScrollNotifier;
+        private final OnMoveClickListener cellClickListener;
         private final View.OnScrollChangeListener scrollListener;
 
-        public TabelaViewHolder(@NonNull View itemView, RowScrollNotifier rowScrollNotifier) {
+        public TabelaViewHolder(@NonNull View itemView, RowScrollNotifier rowScrollNotifier, OnMoveClickListener cellClickListener) {
             super(itemView);
             context = itemView.getContext();
             this.rowScrollNotifier = rowScrollNotifier;
+            this.cellClickListener = cellClickListener;
             moveLetter = itemView.findViewById(R.id.text_view_move_letter);
             statusCellsContainer = itemView.findViewById(R.id.status_cells_container);
             statusCellsScrollView = itemView.findViewById(R.id.status_cells_scroll_view);
@@ -118,9 +123,25 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
             statusCellsScrollView.setOnScrollChangeListener(scrollListener);
         }
 
-        public void bind(Movimento move, List<Pessoa> currentPersonList, OnMoveClickListener cellListener) {
+        public void bind(Movimento move, List<Pessoa> currentPersonList) {
             moveLetter.setText(move.getNome());
-            statusCellsContainer.removeAllViews();
+
+            int numPerson = currentPersonList.size();
+            int currentCellCount = statusCellsContainer.getChildCount();
+
+            while (currentCellCount < numPerson) {
+                TextView newCell = (TextView) LayoutInflater.from(context).inflate(R.layout.item_move_cell, statusCellsContainer, false);
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dpToPx(120, context), dpToPx(40, context));
+                params.setMargins(dpToPx(1, context), dpToPx(1, context), dpToPx(1, context), dpToPx(1, context));
+                newCell.setLayoutParams(params);
+                statusCellsContainer.addView(newCell);
+                currentCellCount++;
+            }
+
+            while (currentCellCount > numPerson) {
+                statusCellsContainer.removeViewAt(currentCellCount - 1);
+                currentCellCount--;
+            }
 
             int textColor = Color.BLACK;
             switch(move.getTipo()){
@@ -137,11 +158,9 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
 
             if (currentPersonList == null) return;
 
-            for (Pessoa pessoa : currentPersonList) {
-                TextView cell = (TextView) LayoutInflater.from(context).inflate(R.layout.item_move_cell, statusCellsContainer, false);
-                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dpToPx(120, context), dpToPx(40, context));
-                params.setMargins(dpToPx(1, context), dpToPx(1, context), dpToPx(1, context), dpToPx(1, context));
-                cell.setLayoutParams(params);
+            for (int i = 0; i < numPerson; i++) {
+                Pessoa pessoa = currentPersonList.get(i);
+                TextView cell = (TextView) statusCellsContainer.getChildAt(i);
 
                 int status = 0;
                 if (pessoa.getMoveStatus() != null) {
@@ -164,8 +183,12 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
                     default: cellBackground.setColor(Color.WHITE); cell.setText(""); break;
                 }
                 cell.setBackground(cellBackground);
-                cell.setOnClickListener(v -> cellListener.onMoveClick(pessoa, move.getNome()));
-                statusCellsContainer.addView(cell);
+                final int finalI = i;
+                cell.setOnClickListener(v -> {
+                    if (cellClickListener != null) {
+                        cellClickListener.onMoveClick(currentPersonList.get(finalI), move.getNome());
+                    }
+                });
             }
         }
 
@@ -177,6 +200,66 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
         private int dpToPx(int dp, Context context) {
             if (context == null) return dp;
             return (int) (dp * context.getResources().getDisplayMetrics().density);
+        }
+    }
+
+    class PessoaDiffCallback extends DiffUtil.Callback {
+        private final List<Pessoa> oldList;
+        private final List<Pessoa> newList;
+
+        public PessoaDiffCallback(List<Pessoa> oldList, List<Pessoa> newList) {
+            this.oldList = oldList;
+            this.newList = newList;
+        }
+
+        @Override
+        public int getOldListSize() {
+            return oldList.size();
+        }
+
+        @Override
+        public int getNewListSize() {
+            return newList.size();
+        }
+
+        @Override
+        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+            return oldList.get(oldItemPosition).getNome().equals(newList.get(newItemPosition).getNome());
+        }
+
+        @Override
+        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+            return oldList.get(oldItemPosition).equals(newList.get(newItemPosition));
+        }
+    }
+
+    class MovimentoDiffCallback extends DiffUtil.Callback {
+        private final List<Movimento> oldList;
+        private final List<Movimento> newList;
+
+        public MovimentoDiffCallback(List<Movimento> oldList, List<Movimento> newList) {
+            this.oldList = oldList;
+            this.newList = newList;
+        }
+
+        @Override
+        public int getOldListSize() {
+            return oldList.size();
+        }
+
+        @Override
+        public int getNewListSize() {
+            return newList.size();
+        }
+
+        @Override
+        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+            return Objects.equals(oldList.get(oldItemPosition).getNome(), newList.get(newItemPosition).getNome());
+        }
+
+        @Override
+        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+            return oldList.get(oldItemPosition).equals(newList.get(newItemPosition));
         }
     }
 }

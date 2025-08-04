@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/ufabcirco/adapter/SectionsPagerAdapter.java
 package com.example.ufabcirco.adapter;
 
 import androidx.annotation.NonNull;
@@ -10,6 +9,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter;
 import com.example.ufabcirco.ui.FilaFragment;
 import com.example.ufabcirco.ui.TabelaFragment;
 import com.example.ufabcirco.ui.PlaceholderFragment;
+import com.example.ufabcirco.ui.GaleriaFragment;
 
 public class SectionsPagerAdapter extends FragmentStateAdapter {
 
@@ -28,7 +28,7 @@ public class SectionsPagerAdapter extends FragmentStateAdapter {
             case 1:
                 return TabelaFragment.newInstance();
             case 2:
-                return PlaceholderFragment.newInstance("Conteúdo da Tab 3");
+                return GaleriaFragment.newInstance();
             default:
                 return PlaceholderFragment.newInstance("Erro: Tab desconhecida");
         }

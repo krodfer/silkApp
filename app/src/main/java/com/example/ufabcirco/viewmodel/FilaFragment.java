@@ -19,7 +19,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.ufabcirco.R;
 import com.example.ufabcirco.adapter.FilaAdapter;
 import com.example.ufabcirco.model.Pessoa;
-import com.example.ufabcirco.viewmodel.CircoViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.Collections;
 import java.util.Comparator;
