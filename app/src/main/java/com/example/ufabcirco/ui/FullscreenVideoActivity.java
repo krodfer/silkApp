@@ -1,10 +1,8 @@
 package com.example.ufabcirco.ui;
 
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
-import android.view.Window;
-import android.view.WindowManager;
+import android.view.View;
 import android.widget.MediaController;
 import android.widget.VideoView;
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,30 +11,59 @@ import com.example.ufabcirco.R;
 public class FullscreenVideoActivity extends AppCompatActivity {
 
     public static final String EXTRA_VIDEO_URL = "video_url";
+    private VideoView fullscreenVideoView;
+    private MediaController mediaController;
+    private String videoUrl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_fullscreen_video);
 
-        VideoView videoView = findViewById(R.id.fullscreen_video_view);
-        String videoUrl = getIntent().getStringExtra(EXTRA_VIDEO_URL);
+        View decorView = getWindow().getDecorView();
+        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+        decorView.setSystemUiVisibility(uiOptions);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
 
-        if (videoUrl != null && !videoUrl.isEmpty()) {
-            Uri uri = Uri.parse(videoUrl);
-            videoView.setVideoURI(uri);
+        fullscreenVideoView = findViewById(R.id.fullscreen_video_view);
+        videoUrl = getIntent().getStringExtra(EXTRA_VIDEO_URL);
 
-            MediaController mediaController = new MediaController(this);
-            videoView.setMediaController(mediaController);
-            mediaController.setAnchorView(videoView);
+        if (videoUrl != null) {
+            fullscreenVideoView.setVideoURI(Uri.parse(videoUrl));
 
-            videoView.setOnPreparedListener(MediaPlayer::start);
+            mediaController = new MediaController(this);
+            fullscreenVideoView.setMediaController(mediaController);
+            mediaController.setAnchorView(fullscreenVideoView);
+            mediaController.setVisibility(View.GONE);
 
-            videoView.requestFocus();
+            fullscreenVideoView.setOnPreparedListener(mp -> {
+                fullscreenVideoView.start();
+                mediaController.setVisibility(View.VISIBLE);
+            });
+
+            fullscreenVideoView.setOnClickListener(v -> {
+                if (mediaController.isShowing()) {
+                    mediaController.hide();
+                } else {
+                    mediaController.show();
+                }
+            });
+
+        } else {
+            finish();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        View decorView = getWindow().getDecorView();
+        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+        decorView.setSystemUiVisibility(uiOptions);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
         }
     }
 }

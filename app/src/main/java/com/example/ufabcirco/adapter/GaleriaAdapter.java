@@ -7,7 +7,6 @@ import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 import android.widget.VideoView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,6 +22,7 @@ public class GaleriaAdapter extends RecyclerView.Adapter<GaleriaAdapter.PostView
 
     private List<Post> postList;
     private static final String TAG = "GaleriaAdapter";
+    private int playingPosition = -1;
 
     public GaleriaAdapter(List<Post> postList) {
         this.postList = postList;
@@ -31,6 +31,10 @@ public class GaleriaAdapter extends RecyclerView.Adapter<GaleriaAdapter.PostView
     public void updatePosts(List<Post> newPostList) {
         this.postList = newPostList != null ? newPostList : new ArrayList<>();
         notifyDataSetChanged();
+    }
+
+    public int getPostCount() {
+        return postList.size();
     }
 
     @NonNull
@@ -42,19 +46,22 @@ public class GaleriaAdapter extends RecyclerView.Adapter<GaleriaAdapter.PostView
 
     @Override
     public void onBindViewHolder(@NonNull PostViewHolder holder, int position) {
-        Post post = postList.get(position);
+        if (postList.isEmpty()) {
+            return;
+        }
+        Post post = postList.get(position % postList.size());
         holder.bind(post);
+
+        if (position == playingPosition) {
+            holder.startVideo();
+        } else {
+            holder.pauseVideo();
+        }
     }
 
     @Override
     public int getItemCount() {
-        return postList.size();
-    }
-
-    @Override
-    public void onViewAttachedToWindow(@NonNull PostViewHolder holder) {
-        super.onViewAttachedToWindow(holder);
-        holder.startVideo();
+        return postList.isEmpty() ? 0 : Integer.MAX_VALUE;
     }
 
     @Override
@@ -63,21 +70,31 @@ public class GaleriaAdapter extends RecyclerView.Adapter<GaleriaAdapter.PostView
         holder.pauseVideo();
     }
 
+    public void setPlayingPosition(int position) {
+        if (playingPosition != position) {
+            int oldPosition = playingPosition;
+            playingPosition = position;
+            if (oldPosition != -1) {
+                notifyItemChanged(oldPosition);
+            }
+            if (playingPosition != -1) {
+                notifyItemChanged(playingPosition);
+            }
+        }
+    }
+
     public static class PostViewHolder extends RecyclerView.ViewHolder {
         private final VideoView videoView;
-        private final TextView textViewTags;
         private final OutlineTextView textViewTitle;
         private String videoUrl;
 
         public PostViewHolder(@NonNull View itemView) {
             super(itemView);
             videoView = itemView.findViewById(R.id.video_view_post);
-            textViewTags = itemView.findViewById(R.id.text_view_post_tags);
             textViewTitle = itemView.findViewById(R.id.text_view_post_title);
         }
 
         public void bind(Post post) {
-            textViewTags.setText(post.getTags().toString());
             textViewTitle.setText(post.getMovimentoNome());
             this.videoUrl = post.getUrl();
 
@@ -96,15 +113,13 @@ public class GaleriaAdapter extends RecyclerView.Adapter<GaleriaAdapter.PostView
                     intent.putExtra(FullscreenVideoActivity.EXTRA_VIDEO_URL, videoUrl);
                     context.startActivity(intent);
                 });
+            } else {
+                videoView.setVisibility(View.GONE);
             }
         }
 
         private void setupVideoPlayback() {
-            videoView.setOnPreparedListener(mp -> {
-                mp.setLooping(true);
-                mp.start();
-            });
-            videoView.start();
+            videoView.setOnPreparedListener(mp -> mp.setLooping(true));
         }
 
         private int generateRandomPastelColor() {
@@ -116,7 +131,7 @@ public class GaleriaAdapter extends RecyclerView.Adapter<GaleriaAdapter.PostView
         }
 
         public void startVideo() {
-            if (videoView != null && videoUrl != null && !videoUrl.isEmpty()) {
+            if (videoView != null && !videoView.isPlaying()) {
                 videoView.start();
             }
         }

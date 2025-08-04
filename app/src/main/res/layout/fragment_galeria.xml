@@ -5,17 +5,22 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
-    android:weightSum="3">
+    android:weightSum="3"
+    android:clipChildren="false">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_weight="2">
+        android:layout_weight="2"
+        android:clipChildren="false">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view_galeria"
             android:layout_width="0dp"
             android:layout_height="0dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:paddingTop="53dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -57,39 +62,41 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center_horizontal"
             android:text="Filtros"
             android:textSize="18sp"
-            android:textStyle="bold"
-            android:gravity="center_horizontal"
-            android:layout_marginBottom="8dp"/>
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/filter_exemplo_1"
             style="@style/Widget.AppCompat.Button.Borderless"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Exemplo 1"
-            android:textSize="16sp"
             android:background="?android:attr/selectableItemBackground"
-            android:gravity="center_horizontal"/>
+            android:gravity="center_horizontal"
+            android:text="Exemplo 1"
+            android:textSize="16sp" />
+
         <TextView
             android:id="@+id/filter_exemplo_2"
             style="@style/Widget.AppCompat.Button.Borderless"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Exemplo 2"
-            android:textSize="16sp"
             android:background="?android:attr/selectableItemBackground"
-            android:gravity="center_horizontal"/>
+            android:gravity="center_horizontal"
+            android:text="Exemplo 2"
+            android:textSize="16sp" />
+
         <TextView
             android:id="@+id/filter_exemplo_3"
             style="@style/Widget.AppCompat.Button.Borderless"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Exemplo 3"
-            android:textSize="16sp"
             android:background="?android:attr/selectableItemBackground"
-            android:gravity="center_horizontal"/>
+            android:gravity="center_horizontal"
+            android:text="Exemplo 3"
+            android:textSize="16sp" />
 
     </LinearLayout>
 
