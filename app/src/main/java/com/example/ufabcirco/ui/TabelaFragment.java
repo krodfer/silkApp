@@ -2,6 +2,7 @@ package com.example.ufabcirco.ui;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -14,34 +15,30 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import com.example.ufabcirco.BuildConfig;
 import com.example.ufabcirco.R;
-import com.example.ufabcirco.adapter.TabelaAdapter;
 import com.example.ufabcirco.model.Movimento;
 import com.example.ufabcirco.model.Pessoa;
+import com.example.ufabcirco.ui.custom.OutlineTextView;
 import com.example.ufabcirco.viewmodel.CircoViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.ValueRange;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -57,7 +54,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollNotifier {
+public class TabelaFragment extends Fragment {
 
     private static final String SPREADSHEET_ID = "17g23jX5Su4rlUKW5Htq9pZRboW_5GxJieoYDlcTJe_w";
     private static final String API_KEY = "AIzaSyC2Af7CSAT3Aees4gg1PMB3NmTPhdwVxUA";
@@ -65,13 +62,15 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
     private static final String TAG = "TabelaFragment";
 
     private CircoViewModel circoViewModel;
-    private RecyclerView recyclerViewTabela;
-    private TabelaAdapter tabelaAdapter;
+    private LinearLayout mainTableContainer;
+    private LinearLayout fixedMoveListContainer;
     private LinearLayout headerNamesContainer;
-    private HorizontalScrollView headerNamesScrollView;
+    private HorizontalScrollView mainHorizontalScrollView;
+    private ScrollView fixedColumnScrollView;
+    private ScrollView mainTableScrollView;
     private FloatingActionButton fabExport, fabImport;
+    private HorizontalScrollView headerNamesScrollView;
 
-    private boolean isSyncingScroll = false;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Context context;
@@ -80,6 +79,7 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
     private long lastLocalModificationTime = 0;
     private long lastRemoteSyncTime = 0;
     private final int SYNC_INTERVAL_MS = 3000;
+    private final long SYNC_DEBOUNCE_MS = 1000;
 
     private final Runnable syncRunnable = new Runnable() {
         @Override
@@ -88,6 +88,16 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
             handler.postDelayed(this, SYNC_INTERVAL_MS);
         }
     };
+
+    private final Runnable debounceSyncRunnable = () -> {
+        if (!isSyncing && isOnline() && lastLocalModificationTime > lastRemoteSyncTime) {
+            Log.d(TAG, "Debounce concluído. Sincronizando dados locais para remoto.");
+            syncData();
+        }
+    };
+
+    private List<Pessoa> currentPessoaList = new ArrayList<>();
+    private List<Movimento> currentMoveList = new ArrayList<>();
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -104,50 +114,140 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
         super.onViewCreated(view, savedInstanceState);
         this.context = requireContext();
 
+        fixedMoveListContainer = view.findViewById(R.id.fixed_move_list_container);
         headerNamesContainer = view.findViewById(R.id.header_names_container);
+        mainTableContainer = view.findViewById(R.id.main_table_container);
+        mainHorizontalScrollView = view.findViewById(R.id.main_horizontal_scrollview);
+        fixedColumnScrollView = view.findViewById(R.id.fixed_column_scroll_view);
+        mainTableScrollView = view.findViewById(R.id.main_table_scroll_view);
         headerNamesScrollView = view.findViewById(R.id.header_names_scroll_view);
-        recyclerViewTabela = view.findViewById(R.id.recycler_view_tabela);
-        recyclerViewTabela.setLayoutManager(new LinearLayoutManager(getContext()));
 
         fabExport = view.findViewById(R.id.fab_export_csv);
         fabImport = view.findViewById(R.id.fab_import_csv);
         fabExport.setVisibility(View.GONE);
         fabImport.setVisibility(View.GONE);
 
-        tabelaAdapter = new TabelaAdapter(new ArrayList<>(), new ArrayList<>(),
-                (pessoa, moveName) -> {
-                    if (circoViewModel != null) {
-                        circoViewModel.cycleMoveStatus(pessoa, moveName);
-                    }
-                },
-                this
-        );
-        recyclerViewTabela.setAdapter(tabelaAdapter);
-
         circoViewModel = new ViewModelProvider(requireActivity()).get(CircoViewModel.class);
 
         circoViewModel.getLocalModificationEvent().observe(getViewLifecycleOwner(), isModified -> {
             if (Boolean.TRUE.equals(isModified)) {
                 lastLocalModificationTime = System.currentTimeMillis();
-                Log.d(TAG, "Notificação de modificação local recebida. lastLocalModificationTime atualizado.");
+                Log.d(TAG, "Notificação de modificação local recebida. Agendando sincronização com debounce.");
+                handler.removeCallbacks(debounceSyncRunnable);
+                handler.postDelayed(debounceSyncRunnable, SYNC_DEBOUNCE_MS);
             }
         });
 
         circoViewModel.getMasterList().observe(getViewLifecycleOwner(), pessoas -> {
-            if (pessoas != null) {
-                updateHeaders(pessoas);
-                tabelaAdapter.updatePersonList(pessoas);
-            }
+            currentPessoaList = pessoas;
+            updateHeaders(pessoas);
+            updateTable();
         });
 
         circoViewModel.getMoveList().observe(getViewLifecycleOwner(), moves -> {
-            if (moves != null) {
-                tabelaAdapter.updateMoveList(moves);
-            }
+            currentMoveList = moves;
+            updateTable();
         });
 
-        setupScrollSync();
+        fixedColumnScrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+            mainTableScrollView.scrollTo(scrollX, scrollY);
+        });
+        mainTableScrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+            fixedColumnScrollView.scrollTo(scrollX, scrollY);
+        });
+
+        if (headerNamesScrollView != null) {
+            mainHorizontalScrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+                headerNamesScrollView.scrollTo(scrollX, 0);
+            });
+        }
+
         handler.post(syncRunnable);
+    }
+
+    private void updateTable() {
+        if (currentPessoaList == null || currentMoveList == null) return;
+
+        int savedScrollX = mainHorizontalScrollView.getScrollX();
+        int savedScrollY = mainTableScrollView.getScrollY();
+
+        mainTableContainer.removeAllViews();
+        fixedMoveListContainer.removeAllViews();
+
+        for (Movimento move : currentMoveList) {
+            OutlineTextView moveLetter = new OutlineTextView(context);
+            LinearLayout.LayoutParams moveParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(40, context));
+            moveParams.setMargins(dpToPx(1, context), dpToPx(1, context), dpToPx(1, context), dpToPx(1, context)); // Adicionado margem
+            moveLetter.setLayoutParams(moveParams);
+            moveLetter.setGravity(Gravity.CENTER);
+            moveLetter.setPadding(dpToPx(4, context), dpToPx(12, context), dpToPx(4, context), dpToPx(12, context));
+            moveLetter.setBackgroundResource(R.drawable.cell_border);
+            moveLetter.setText(move.getNome());
+            moveLetter.setBackgroundColor(Color.parseColor("#F0F0F0")); // Cor de fundo da célula
+
+            int textColor = Color.BLACK;
+            switch(move.getTipo()){
+                case 0: textColor = Color.parseColor("#00FF00"); break;
+                case 1: textColor = Color.parseColor("#c9ffc9"); break;
+                case 2: textColor = Color.parseColor("#f037a6"); break;
+                case 3: textColor = Color.parseColor("#FED8B1"); break;
+                case 4: textColor = Color.parseColor("#ff7700"); break;
+            }
+            moveLetter.setTextColor(textColor);
+            moveLetter.setOutlineColor(Color.BLACK);
+            moveLetter.setOutlineWidth(4.0f);
+            fixedMoveListContainer.addView(moveLetter);
+
+            LinearLayout rowLayout = new LinearLayout(context);
+            rowLayout.setOrientation(LinearLayout.HORIZONTAL);
+
+            for (Pessoa pessoa : currentPessoaList) {
+                TextView cell = new TextView(context);
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dpToPx(150, context), dpToPx(45, context));
+                params.setMargins(dpToPx(1, context), dpToPx(1, context), dpToPx(1, context), dpToPx(1, context)); // Adicionado margem
+                cell.setLayoutParams(params);
+                cell.setGravity(Gravity.CENTER);
+                cell.setTextColor(Color.BLACK);
+                cell.setBackgroundResource(R.drawable.cell_border);
+
+                int status = pessoa.getMoveStatus().getOrDefault(move.getNome(), 0);
+                updateCellAppearance(cell, status);
+
+                cell.setOnClickListener(v -> {
+                    int currentStatus = pessoa.getMoveStatus().getOrDefault(move.getNome(), 0);
+
+                    if (currentStatus >= 4){
+                        currentStatus = 0;
+                    }
+
+                    pessoa.getMoveStatus().put(move.getNome(), currentStatus);
+                    updateCellAppearance(cell, currentStatus);
+
+                    if (circoViewModel != null) {
+                        circoViewModel.cycleMoveStatus(pessoa.getId(), move.getNome());
+                    }
+                });
+
+                rowLayout.addView(cell);
+            }
+            mainTableContainer.addView(rowLayout);
+        }
+
+        mainHorizontalScrollView.post(() -> mainHorizontalScrollView.scrollTo(savedScrollX, 0));
+        mainTableScrollView.post(() -> mainTableScrollView.scrollTo(0, savedScrollY));
+    }
+
+    private void updateCellAppearance(TextView cell, int status) {
+        GradientDrawable cellBackground = (GradientDrawable) ContextCompat.getDrawable(context, R.drawable.cell_border).mutate();
+
+        switch (status) {
+            case 1: cellBackground.setColor(Color.YELLOW); cell.setText("Já fez"); break;
+            case 2: cellBackground.setColor(Color.parseColor("#45aaf7")); cell.setText("Aprendeu"); break;
+            case 3: cellBackground.setColor(Color.parseColor("#fa5f5f")); cell.setText("Não consegue"); break;
+            default: cellBackground.setColor(Color.WHITE); cell.setText(""); break;
+        }
+        cell.setBackground(cellBackground);
     }
 
     private void syncData() {
@@ -372,74 +472,38 @@ public class TabelaFragment extends Fragment implements TabelaAdapter.RowScrollN
                 Log.e(TAG, "Erro ao escrever na planilha", e);
                 handler.post(() -> {
                     if (isAdded()) {
-                        Toast.makeText(context, "Erro ao escrever na planilha. Verifique a chave da conta de serviço e as permissões: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        Toast.makeText(context, "Erro ao sincronizar: " + e.getMessage(), Toast.LENGTH_LONG).show();
                     }
                 });
             }
         });
     }
 
-    private void setupScrollSync() {
-        if (headerNamesScrollView == null) return;
-        headerNamesScrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-            if (isSyncingScroll) return;
-            isSyncingScroll = true;
-            if (tabelaAdapter != null) {
-                tabelaAdapter.syncAllRowsToScroll(scrollX, recyclerViewTabela, null);
-            }
-            isSyncingScroll = false;
-        });
-    }
-
-    @Override
-    public void onRowScrolled(int scrollX, RecyclerView.ViewHolder originatedFromViewHolder) {
-        if (isSyncingScroll) return;
-        isSyncingScroll = true;
-        if (headerNamesScrollView != null) {
-            headerNamesScrollView.scrollTo(scrollX, 0);
-        }
-        if (tabelaAdapter != null && recyclerViewTabela != null && originatedFromViewHolder instanceof TabelaAdapter.TabelaViewHolder) {
-            tabelaAdapter.syncAllRowsToScroll(scrollX, recyclerViewTabela, (TabelaAdapter.TabelaViewHolder) originatedFromViewHolder);
-        }
-        isSyncingScroll = false;
-    }
-
     private void updateHeaders(List<Pessoa> personList) {
         if (headerNamesContainer == null || context == null || personList == null) return;
 
-        List<String> currentHeaderNames = new ArrayList<>();
-        for (int i = 0; i < headerNamesContainer.getChildCount(); i++) {
-            View child = headerNamesContainer.getChildAt(i);
-            if (child instanceof TextView) {
-                currentHeaderNames.add(((TextView) child).getText().toString());
+        headerNamesContainer.removeAllViews();
+        if (context == null || personList == null) return;
+
+        for (Pessoa person : personList) {
+            TextView headerCell = new TextView(context);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dpToPx(150, context), dpToPx(60, context));
+            params.setMargins(dpToPx(1, context), dpToPx(1, context), dpToPx(1, context), dpToPx(1, context));
+            headerCell.setLayoutParams(params);
+            headerCell.setGravity(Gravity.CENTER);
+            headerCell.setPadding(dpToPx(4, context), dpToPx(12, context), dpToPx(4, context), dpToPx(12, context));
+            headerCell.setBackgroundResource(R.drawable.cell_border);
+            headerCell.setText(person.getNome());
+
+            if (circoViewModel.isInstructor(person.getNome())) {
+                headerCell.setTextColor(Color.parseColor("#800080"));
+                headerCell.setShadowLayer(2.5f, 0, 0, Color.BLACK);
+            } else {
+                headerCell.setTextColor(Color.BLACK);
             }
-        }
 
-        List<String> newHeaderNames = personList.stream()
-                .map(Pessoa::getNome)
-                .collect(Collectors.toList());
-
-        if (!currentHeaderNames.equals(newHeaderNames)) {
-            headerNamesContainer.removeAllViews();
-            if (context == null || personList == null) return;
-
-            for (Pessoa person : personList) {
-                TextView headerCell = new TextView(context);
-                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dpToPx(120, context), LinearLayout.LayoutParams.MATCH_PARENT);
-                headerCell.setLayoutParams(params);
-                headerCell.setText(person.getNome());
-                headerCell.setGravity(Gravity.CENTER);
-                headerCell.setPadding(dpToPx(4, context), dpToPx(12, context), dpToPx(4, context), dpToPx(12, context));
-                headerCell.setBackgroundResource(R.drawable.cell_border);
-                headerNamesContainer.addView(headerCell);
-
-                if (circoViewModel.isInstructor(person.getNome())) {
-                    headerCell.setTextColor(Color.parseColor("#800080"));
-                    headerCell.setShadowLayer(2.5f, 0, 0, Color.BLACK);
-                }
-
-                headerCell.setOnClickListener(v -> showProfileDialog(person));
-            }
+            headerCell.setOnClickListener(v -> showProfileDialog(person));
+            headerNamesContainer.addView(headerCell);
         }
     }
 

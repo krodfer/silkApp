@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
@@ -23,6 +24,7 @@ public class CircoViewModel extends ViewModel {
 
     private static final String TAG = "CircoViewModel";
     private final Set<String> instructorNames = new HashSet<>();
+    private final Map<String, Pessoa> pessoaMap = new HashMap<>();
 
     private final MutableLiveData<List<Pessoa>> _masterList = new MutableLiveData<>(new ArrayList<>());
     public LiveData<List<Pessoa>> getMasterList() { return _masterList; }
@@ -71,11 +73,11 @@ public class CircoViewModel extends ViewModel {
         List<Post> hardcodedPosts = new ArrayList<>();
         List<String> tagsExemplo = Arrays.asList("video", "porto", "chaveDeCintura");
 
-        hardcodedPosts.add(new Post("https://cdn.discordapp.com/attachments/1128756976457887844/1401769722176999544/YouCut_20230712_161923714_1.mp4?ex=68917b49&is=689029c9&hm=fe7e5266f691fb23def898d71194de0d6030254a2e97d195f0bf5af457defa37&", tagsExemplo, "Chave de Cintura & Giro", 1, 3));
-        hardcodedPosts.add(new Post("https://cdn.discordapp.com/attachments/1128756976457887844/1401774268165128313/YouCut_20230726_173338063_1.mp4?ex=68917f85&is=68902e05&hm=9faf7d350aa1c88c4b742eddb91505c4af685a7e48edffc71ee06e75fb9f871c&", tagsExemplo, "Escorpião rei & Espacate", 2, 2));
-        hardcodedPosts.add(new Post("https://cdn.discordapp.com/attachments/1128756976457887844/1401775445640478741/YouCut_20230726_192137111.mp4?ex=6891809d&is=68902f1d&hm=fbfd65ba037d7506b86830da716b7788e24589541c800b160777c0c7c639c90d&", tagsExemplo, "Subida Crochê & Chave de Cintura", 1, 3));
-        hardcodedPosts.add(new Post("https://cdn.discordapp.com/attachments/1128756976457887844/1401775812860186665/ssstik.io_aerialsmarcela_1749163989596.mp4?ex=689180f5&is=68902f75&hm=c1fc3db0d3bdbe81f974d2a19d0df7c78bca921232c21a679a83a821cd0f2ac0&", tagsExemplo, "Espacate", 3, 1));
-        hardcodedPosts.add(new Post("https://cdn.discordapp.com/attachments/1128756976457887844/1401776227706081380/videoBaixado-112.mp4?ex=68918158&is=68902fd8&hm=23275d611a8f390601780d36e472c95b4603c6f0ac336ca5b58a29ae31a1afa7&", tagsExemplo, "Super homem", 1, 3));
+        hardcodedPosts.add(new Post("https://drive.google.com/uc?export=download&id=1dqBpuYc1BFXQrLTRzrtu5ZGjPkU7Anfo", tagsExemplo, "Chave de Cintura & Giro", 1, 3));
+        hardcodedPosts.add(new Post("https://drive.google.com/uc?export=download&id=1WQOQXr8GKkYKxEw3i56bv_cHoYVncrSo", tagsExemplo, "Escorpião rei & Espacate", 2, 2));
+        hardcodedPosts.add(new Post("https://drive.google.com/uc?export=download&id=1aTg7Btom4daXQVAX1OkfSoFdOYu2B3d5", tagsExemplo, "Subida Crochê & Chave de Cintura", 1, 3));
+        hardcodedPosts.add(new Post("https://drive.google.com/uc?export=download&id=1lFgABHtdGxEYQ61WIhAst3RMjX0mE1OV", tagsExemplo, "Espacate", 3, 1));
+        hardcodedPosts.add(new Post("https://drive.google.com/uc?export=download&id=1FF1aTfXK0L-tQDCyunBz27q6h4IWiFX_", tagsExemplo, "Super homem", 1, 3));
 
         _allPosts.setValue(hardcodedPosts);
         shuffleAndFilterPosts(null);
@@ -91,42 +93,44 @@ public class CircoViewModel extends ViewModel {
         }
     }
 
-    public void cycleMoveStatus(Pessoa pessoa, String move) {
-        if (pessoa == null || move == null) {
-            return;
-        }
-        List<Pessoa> currentMasterList = _masterList.getValue();
-        if (currentMasterList == null) {
+    public void cycleMoveStatus(String pessoaId, String move) {
+        if (pessoaId == null || move == null) {
             return;
         }
 
-        List<Pessoa> updatedMasterList = new ArrayList<>(currentMasterList.size());
-        boolean hasChanged = false;
+        Pessoa pessoaToUpdate = pessoaMap.get(pessoaId);
+        if (pessoaToUpdate == null) {
+            return;
+        }
 
-        for (Pessoa p : currentMasterList) {
-            if (p.getId().equals(pessoa.getId())) {
-                Pessoa updatedPessoa = new Pessoa(p.getId(), p.getNome());
-                updatedPessoa.setMoveStatus(new HashMap<>(p.getMoveStatus()));
+        Pessoa updatedPessoa = new Pessoa(pessoaToUpdate.getId(), pessoaToUpdate.getNome());
+        updatedPessoa.setMoveStatus(new HashMap<>(pessoaToUpdate.getMoveStatus()));
 
-                int currentStatus = updatedPessoa.getMoveStatus().getOrDefault(move, 0);
-                int nextStatus = (currentStatus + 1) % 4;
-                updatedPessoa.getMoveStatus().put(move, nextStatus);
+        int currentStatus = updatedPessoa.getMoveStatus().getOrDefault(move, 0);
+        int nextStatus = (currentStatus + 1) % 4;
+        updatedPessoa.getMoveStatus().put(move, nextStatus);
 
-                updatedMasterList.add(updatedPessoa);
-                hasChanged = true;
-            } else {
-                updatedMasterList.add(p);
+        pessoaMap.put(pessoaId, updatedPessoa);
+
+        List<Pessoa> updatedMasterList = new ArrayList<>();
+        List<Pessoa> currentMasterListOrder = _masterList.getValue();
+        if (currentMasterListOrder != null) {
+            for (Pessoa p : currentMasterListOrder) {
+                updatedMasterList.add(pessoaMap.get(p.getId()));
             }
         }
 
-        if (hasChanged) {
-            _masterList.setValue(updatedMasterList);
-            notifyLocalModification();
-        }
+        _masterList.setValue(updatedMasterList);
+        notifyLocalModification();
     }
 
     public void importMasterList(List<Pessoa> importedList) {
         if (importedList != null) {
+            pessoaMap.clear();
+            for (Pessoa p : importedList) {
+                pessoaMap.put(p.getId(), p);
+            }
+
             if (!Objects.equals(_masterList.getValue(), importedList)) {
                 _masterList.setValue(new ArrayList<>(importedList));
 
@@ -150,6 +154,7 @@ public class CircoViewModel extends ViewModel {
                 }
             }
         } else {
+            pessoaMap.clear();
             _masterList.setValue(new ArrayList<>());
             _queueList.setValue(new ArrayList<>());
             _selectedPessoaId.setValue(null);
@@ -202,6 +207,7 @@ public class CircoViewModel extends ViewModel {
         Pessoa newPerson = new Pessoa(finalName);
         currentMasterList.add(0, newPerson);
         _masterList.setValue(currentMasterList);
+        pessoaMap.put(newPerson.getId(), newPerson);
 
         List<Pessoa> currentQueueList = _queueList.getValue() != null ? new ArrayList<>(_queueList.getValue()) : new ArrayList<>();
         currentQueueList.add(newPerson);

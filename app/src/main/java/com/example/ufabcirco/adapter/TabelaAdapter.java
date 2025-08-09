@@ -6,7 +6,6 @@ import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -23,24 +22,19 @@ import java.util.Objects;
 
 public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaViewHolder> {
 
-    private List<Pessoa> pessoaList;
     private List<Movimento> moveList;
+    private List<Pessoa> pessoaList;
     private final OnMoveClickListener cellClickListener;
-    private static final String TAG = "TabelaAdapter";
-    private final RowScrollNotifier rowScrollNotifierCallback;
-    private int lastKnownScrollX = 0;
 
-    public interface OnMoveClickListener { void onMoveClick(Pessoa pessoa, String moveName); }
-    public interface RowScrollNotifier {
-        void onRowScrolled(int scrollX, RecyclerView.ViewHolder originatedFromViewHolder);
+    public interface OnMoveClickListener {
+        void onMoveClick(String pessoaId, String moveName);
     }
 
-    public TabelaAdapter(List<Pessoa> initialPersonList, List<Movimento> initialMoveList, OnMoveClickListener cellClickListener,
-                         RowScrollNotifier rowScrollNotifierCallback) {
+    public TabelaAdapter(List<Pessoa> initialPersonList, List<Movimento> initialMoveList, OnMoveClickListener cellClickListener) {
         this.pessoaList = new ArrayList<>(initialPersonList);
         this.moveList = new ArrayList<>(initialMoveList);
         this.cellClickListener = cellClickListener;
-        this.rowScrollNotifierCallback = rowScrollNotifierCallback;
+        setHasStableIds(true);
     }
 
     public void updatePersonList(List<Pessoa> newPersonList) {
@@ -57,27 +51,19 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
         diffResult.dispatchUpdatesTo(this);
     }
 
-    public void setHorizontalScrollPosition(int scrollX) {
-        this.lastKnownScrollX = scrollX;
-    }
-
-    public void syncAllRowsToScroll(int scrollX, RecyclerView recyclerView, TabelaViewHolder excludedViewHolder) {
-        if (recyclerView == null) return;
-        setHorizontalScrollPosition(scrollX);
-        for (int i = 0; i < recyclerView.getChildCount(); i++) {
-            View child = recyclerView.getChildAt(i);
-            TabelaViewHolder vh = (TabelaViewHolder) recyclerView.getChildViewHolder(child);
-            if (vh != null && vh != excludedViewHolder) {
-                vh.syncScrollProgrammatically(scrollX);
-            }
+    @Override
+    public long getItemId(int position) {
+        if (position >= 0 && position < moveList.size()) {
+            return moveList.get(position).getNome().hashCode();
         }
+        return RecyclerView.NO_ID;
     }
 
     @NonNull
     @Override
     public TabelaViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_tabela_row, parent, false);
-        return new TabelaViewHolder(view, rowScrollNotifierCallback, cellClickListener);
+        return new TabelaViewHolder(view, cellClickListener);
     }
 
     @Override
@@ -87,7 +73,6 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
         }
         Movimento move = moveList.get(position);
         holder.bind(move, pessoaList);
-        holder.syncScrollProgrammatically(lastKnownScrollX);
     }
 
     @Override
@@ -99,28 +84,14 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
         private final OutlineTextView moveLetter;
         private final LinearLayout statusCellsContainer;
         private final Context context;
-        private final HorizontalScrollView statusCellsScrollView;
-        private boolean isProgrammaticScroll = false;
-        private final RowScrollNotifier rowScrollNotifier;
         private final OnMoveClickListener cellClickListener;
-        private final View.OnScrollChangeListener scrollListener;
 
-        public TabelaViewHolder(@NonNull View itemView, RowScrollNotifier rowScrollNotifier, OnMoveClickListener cellClickListener) {
+        public TabelaViewHolder(@NonNull View itemView, OnMoveClickListener cellClickListener) {
             super(itemView);
             context = itemView.getContext();
-            this.rowScrollNotifier = rowScrollNotifier;
             this.cellClickListener = cellClickListener;
             moveLetter = itemView.findViewById(R.id.text_view_move_letter);
             statusCellsContainer = itemView.findViewById(R.id.status_cells_container);
-            statusCellsScrollView = itemView.findViewById(R.id.status_cells_scroll_view);
-
-            this.scrollListener = (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-                if (!isProgrammaticScroll && this.rowScrollNotifier != null) {
-                    this.rowScrollNotifier.onRowScrolled(scrollX, this);
-                }
-                isProgrammaticScroll = false;
-            };
-            statusCellsScrollView.setOnScrollChangeListener(scrollListener);
         }
 
         public void bind(Movimento move, List<Pessoa> currentPersonList) {
@@ -161,11 +132,7 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
             for (int i = 0; i < numPerson; i++) {
                 Pessoa pessoa = currentPersonList.get(i);
                 TextView cell = (TextView) statusCellsContainer.getChildAt(i);
-
-                int status = 0;
-                if (pessoa.getMoveStatus() != null) {
-                    status = pessoa.getMoveStatus().getOrDefault(move.getNome(), 0);
-                }
+                int status = pessoa.getMoveStatus().getOrDefault(move.getNome(), 0);
 
                 GradientDrawable cellBackground;
                 try {
@@ -179,22 +146,17 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
                 switch (status) {
                     case 1: cellBackground.setColor(Color.YELLOW); cell.setText("Já fez"); break;
                     case 2: cellBackground.setColor(Color.parseColor("#45aaf7")); cell.setText("Aprendeu"); break;
-                    case 3: cellBackground.setColor(Color.parseColor("#fa5f5f")); cell.setText("Não sabe"); break;
+                    case 3: cellBackground.setColor(Color.parseColor("#fa5f5f")); cell.setText("Não consegue"); break;
                     default: cellBackground.setColor(Color.WHITE); cell.setText(""); break;
                 }
                 cell.setBackground(cellBackground);
-                final int finalI = i;
+
                 cell.setOnClickListener(v -> {
                     if (cellClickListener != null) {
-                        cellClickListener.onMoveClick(currentPersonList.get(finalI), move.getNome());
+                        cellClickListener.onMoveClick(pessoa.getId(), move.getNome());
                     }
                 });
             }
-        }
-
-        public void syncScrollProgrammatically(int scrollX) {
-            isProgrammaticScroll = true;
-            statusCellsScrollView.scrollTo(scrollX, 0);
         }
 
         private int dpToPx(int dp, Context context) {
@@ -224,7 +186,7 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
 
         @Override
         public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-            return oldList.get(oldItemPosition).getNome().equals(newList.get(newItemPosition).getNome());
+            return oldList.get(oldItemPosition).getId().equals(newList.get(newItemPosition).getId());
         }
 
         @Override

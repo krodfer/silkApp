@@ -13,12 +13,12 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="60dp"
             android:orientation="horizontal"
             android:background="#F0F0F0">
 
             <TextView
-                android:layout_width="200dp"
+                android:layout_width="250dp"
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:padding="8dp"
@@ -28,22 +28,56 @@
             <HorizontalScrollView
                 android:id="@+id/header_names_scroll_view"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:scrollbars="none">
 
                 <LinearLayout
                     android:id="@+id/header_names_container"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingEnd="16dp"/> </HorizontalScrollView>
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"/>
+            </HorizontalScrollView>
         </LinearLayout>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler_view_tabela"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:orientation="horizontal">
+
+            <ScrollView
+                android:id="@+id/fixed_column_scroll_view"
+                android:layout_width="250dp"
+                android:layout_height="match_parent"
+                android:fillViewport="true">
+                <LinearLayout
+                    android:id="@+id/fixed_move_list_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </ScrollView>
+
+            <HorizontalScrollView
+                android:id="@+id/main_horizontal_scrollview"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:scrollbars="none">
+
+                <ScrollView
+                    android:id="@+id/main_table_scroll_view"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:fillViewport="true">
+
+                    <LinearLayout
+                        android:id="@+id/main_table_container"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+                </ScrollView>
+            </HorizontalScrollView>
+        </LinearLayout>
     </LinearLayout>
 
     <ProgressBar
