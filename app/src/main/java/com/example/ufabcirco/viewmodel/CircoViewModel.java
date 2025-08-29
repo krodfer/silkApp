@@ -217,6 +217,31 @@ public class CircoViewModel extends ViewModel {
         return "SUCCESS";
     }
 
+    public void updateMoveStatus(String pessoaId, String moveName) {
+        List<Pessoa> currentList = _masterList.getValue();
+        if (currentList != null) {
+            int pessoaIndex = -1;
+            for (int i = 0; i < currentList.size(); i++) {
+                if (currentList.get(i).getId().equals(pessoaId)) {
+                    pessoaIndex = i;
+                    break;
+                }
+            }
+
+            if (pessoaIndex != -1) {
+                Pessoa pessoaToUpdate = currentList.get(pessoaIndex);
+                Map<String, Integer> statusMap = pessoaToUpdate.getMoveStatus();
+                Integer currentStatus = statusMap.get(moveName);
+                if (currentStatus == null) {
+                    currentStatus = 0;
+                }
+                int newStatus = (currentStatus + 1) % 4;
+                statusMap.put(moveName, newStatus);
+                _masterList.setValue(currentList);
+            }
+        }
+    }
+
     public String addPersonToQueue(Pessoa personToAdd) {
         if (personToAdd == null) {
             return "INVALID";

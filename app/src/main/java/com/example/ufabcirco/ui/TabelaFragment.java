@@ -24,6 +24,7 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+
 import com.example.ufabcirco.BuildConfig;
 import com.example.ufabcirco.R;
 import com.example.ufabcirco.model.Movimento;
@@ -37,8 +38,10 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.ValueRange;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -66,10 +69,12 @@ public class TabelaFragment extends Fragment {
     private LinearLayout fixedMoveListContainer;
     private LinearLayout headerNamesContainer;
     private HorizontalScrollView mainHorizontalScrollView;
-    private ScrollView fixedColumnScrollView;
+    private ScrollView fixedMoveColumnScrollView;
     private ScrollView mainTableScrollView;
     private FloatingActionButton fabExport, fabImport;
     private HorizontalScrollView headerNamesScrollView;
+    private LinearLayout difficultyColumnContainer;
+    private LinearLayout dataColumnsContainer;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -105,7 +110,7 @@ public class TabelaFragment extends Fragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_tabela, container, false);
     }
 
@@ -118,9 +123,12 @@ public class TabelaFragment extends Fragment {
         headerNamesContainer = view.findViewById(R.id.header_names_container);
         mainTableContainer = view.findViewById(R.id.main_table_container);
         mainHorizontalScrollView = view.findViewById(R.id.main_horizontal_scrollview);
-        fixedColumnScrollView = view.findViewById(R.id.fixed_column_scroll_view);
+        fixedMoveColumnScrollView = view.findViewById(R.id.fixed_move_column_scroll_view);
         mainTableScrollView = view.findViewById(R.id.main_table_scroll_view);
         headerNamesScrollView = view.findViewById(R.id.header_names_scroll_view);
+        difficultyColumnContainer = view.findViewById(R.id.difficulty_column_container);
+        dataColumnsContainer = view.findViewById(R.id.data_columns_container);
+
 
         fabExport = view.findViewById(R.id.fab_export_csv);
         fabImport = view.findViewById(R.id.fab_import_csv);
@@ -149,11 +157,12 @@ public class TabelaFragment extends Fragment {
             updateTable();
         });
 
-        fixedColumnScrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+        fixedMoveColumnScrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
             mainTableScrollView.scrollTo(scrollX, scrollY);
         });
+
         mainTableScrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-            fixedColumnScrollView.scrollTo(scrollX, scrollY);
+            fixedMoveColumnScrollView.scrollTo(scrollX, scrollY);
         });
 
         if (headerNamesScrollView != null) {
@@ -171,22 +180,21 @@ public class TabelaFragment extends Fragment {
         int savedScrollX = mainHorizontalScrollView.getScrollX();
         int savedScrollY = mainTableScrollView.getScrollY();
 
-        mainTableContainer.removeAllViews();
         fixedMoveListContainer.removeAllViews();
+        difficultyColumnContainer.removeAllViews();
+        dataColumnsContainer.removeAllViews();
+
 
         for (Movimento move : currentMoveList) {
-            OutlineTextView moveLetter = new OutlineTextView(context);
-            LinearLayout.LayoutParams moveParams = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(40, context));
-            moveParams.setMargins(dpToPx(1, context), dpToPx(1, context), dpToPx(1, context), dpToPx(1, context)); // Adicionado margem
-            moveLetter.setLayoutParams(moveParams);
-            moveLetter.setGravity(Gravity.CENTER);
-            moveLetter.setPadding(dpToPx(4, context), dpToPx(12, context), dpToPx(4, context), dpToPx(12, context));
-            moveLetter.setBackgroundResource(R.drawable.cell_border);
-            moveLetter.setText(move.getNome());
-            moveLetter.setBackgroundColor(Color.parseColor("#F0F0F0")); // Cor de fundo da célula
-
-            int textColor = Color.BLACK;
+            OutlineTextView moveNameCell = new OutlineTextView(context);
+            LinearLayout.LayoutParams moveNameParams = new LinearLayout.LayoutParams(dpToPx(200, context), dpToPx(45, context));
+            moveNameParams.setMargins(dpToPx(1, context), dpToPx(1, context), dpToPx(1, context), dpToPx(1, context));
+            moveNameCell.setLayoutParams(moveNameParams);
+            moveNameCell.setGravity(Gravity.CENTER);
+            moveNameCell.setPadding(dpToPx(4, context), dpToPx(4, context), dpToPx(4, context), dpToPx(4, context));
+            moveNameCell.setBackgroundColor(Color.WHITE);
+            moveNameCell.setText(move.getNome());
+            int textColor = Color.WHITE;
             switch(move.getTipo()){
                 case 0: textColor = Color.parseColor("#00FF00"); break;
                 case 1: textColor = Color.parseColor("#c9ffc9"); break;
@@ -194,10 +202,22 @@ public class TabelaFragment extends Fragment {
                 case 3: textColor = Color.parseColor("#FED8B1"); break;
                 case 4: textColor = Color.parseColor("#ff7700"); break;
             }
-            moveLetter.setTextColor(textColor);
-            moveLetter.setOutlineColor(Color.BLACK);
-            moveLetter.setOutlineWidth(4.0f);
-            fixedMoveListContainer.addView(moveLetter);
+            moveNameCell.setTextColor(textColor);
+            moveNameCell.setOutlineColor(Color.BLACK);
+            moveNameCell.setOutlineWidth(4.0f);
+            fixedMoveListContainer.addView(moveNameCell);
+
+            TextView difficultyValueCell = new TextView(context);
+            LinearLayout.LayoutParams difficultyValueParams = new LinearLayout.LayoutParams(dpToPx(80, context), dpToPx(45, context));
+            difficultyValueParams.setMargins(dpToPx(1, context), dpToPx(1, context), dpToPx(1, context), dpToPx(1, context));
+            difficultyValueCell.setLayoutParams(difficultyValueParams);
+            difficultyValueCell.setGravity(Gravity.CENTER);
+            difficultyValueCell.setPadding(dpToPx(4, context), dpToPx(4, context), dpToPx(4, context), dpToPx(4, context));
+            difficultyValueCell.setBackgroundColor(Color.WHITE);
+            difficultyValueCell.setText(String.format("⭐ %.2f", (double) move.getDificuldade()));
+            difficultyValueCell.setTextColor(Color.BLACK);
+            difficultyColumnContainer.addView(difficultyValueCell);
+
 
             LinearLayout rowLayout = new LinearLayout(context);
             rowLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -205,7 +225,7 @@ public class TabelaFragment extends Fragment {
             for (Pessoa pessoa : currentPessoaList) {
                 TextView cell = new TextView(context);
                 LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dpToPx(150, context), dpToPx(45, context));
-                params.setMargins(dpToPx(1, context), dpToPx(1, context), dpToPx(1, context), dpToPx(1, context)); // Adicionado margem
+                params.setMargins(dpToPx(1, context), dpToPx(1, context), dpToPx(1, context), dpToPx(1, context));
                 cell.setLayoutParams(params);
                 cell.setGravity(Gravity.CENTER);
                 cell.setTextColor(Color.BLACK);
@@ -215,23 +235,12 @@ public class TabelaFragment extends Fragment {
                 updateCellAppearance(cell, status);
 
                 cell.setOnClickListener(v -> {
-                    int currentStatus = pessoa.getMoveStatus().getOrDefault(move.getNome(), 0);
-
-                    if (currentStatus >= 4){
-                        currentStatus = 0;
-                    }
-
-                    pessoa.getMoveStatus().put(move.getNome(), currentStatus);
-                    updateCellAppearance(cell, currentStatus);
-
-                    if (circoViewModel != null) {
-                        circoViewModel.cycleMoveStatus(pessoa.getId(), move.getNome());
-                    }
+                    circoViewModel.cycleMoveStatus(pessoa.getId(), move.getNome());
                 });
 
                 rowLayout.addView(cell);
             }
-            mainTableContainer.addView(rowLayout);
+            dataColumnsContainer.addView(rowLayout);
         }
 
         mainHorizontalScrollView.post(() -> mainHorizontalScrollView.scrollTo(savedScrollX, 0));
@@ -483,16 +492,26 @@ public class TabelaFragment extends Fragment {
         if (headerNamesContainer == null || context == null || personList == null) return;
 
         headerNamesContainer.removeAllViews();
-        if (context == null || personList == null) return;
+
+        TextView difficultyHeader = new TextView(context);
+        LinearLayout.LayoutParams difficultyParams = new LinearLayout.LayoutParams(dpToPx(80, context), dpToPx(45, context));
+        difficultyParams.setMargins(dpToPx(1, context), dpToPx(1, context), dpToPx(1, context), dpToPx(1, context));
+        difficultyHeader.setLayoutParams(difficultyParams);
+        difficultyHeader.setGravity(Gravity.CENTER);
+        difficultyHeader.setBackgroundColor(Color.WHITE);
+        difficultyHeader.setText("⭐");
+        difficultyHeader.setTextSize(24);
+        difficultyHeader.setTextColor(Color.BLACK);
+        headerNamesContainer.addView(difficultyHeader);
+
 
         for (Pessoa person : personList) {
             TextView headerCell = new TextView(context);
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dpToPx(150, context), dpToPx(60, context));
-            params.setMargins(dpToPx(1, context), dpToPx(1, context), dpToPx(1, context), dpToPx(1, context));
-            headerCell.setLayoutParams(params);
+            LinearLayout.LayoutParams personParams = new LinearLayout.LayoutParams(dpToPx(150, context), dpToPx(45, context));
+            personParams.setMargins(dpToPx(1, context), dpToPx(1, context), dpToPx(1, context), dpToPx(1, context));
+            headerCell.setLayoutParams(personParams);
             headerCell.setGravity(Gravity.CENTER);
-            headerCell.setPadding(dpToPx(4, context), dpToPx(12, context), dpToPx(4, context), dpToPx(12, context));
-            headerCell.setBackgroundResource(R.drawable.cell_border);
+            headerCell.setBackgroundColor(Color.WHITE);
             headerCell.setText(person.getNome());
 
             if (circoViewModel.isInstructor(person.getNome())) {

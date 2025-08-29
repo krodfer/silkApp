@@ -13,12 +13,13 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:orientation="horizontal"
-            android:background="#F0F0F0">
+            android:layout_height="45dp"
+            android:background="#F0F0F0"
+            android:orientation="horizontal">
 
             <TextView
-                android:layout_width="250dp"
+                android:id="@+id/move_header_text_view"
+                android:layout_width="200dp"
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:padding="8dp"
@@ -27,15 +28,16 @@
 
             <HorizontalScrollView
                 android:id="@+id/header_names_scroll_view"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="match_parent"
+                android:layout_weight="1"
                 android:scrollbars="none">
 
                 <LinearLayout
                     android:id="@+id/header_names_container"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
-                    android:orientation="horizontal"/>
+                    android:orientation="horizontal" />
             </HorizontalScrollView>
         </LinearLayout>
 
@@ -46,10 +48,11 @@
             android:orientation="horizontal">
 
             <ScrollView
-                android:id="@+id/fixed_column_scroll_view"
-                android:layout_width="250dp"
+                android:id="@+id/fixed_move_column_scroll_view"
+                android:layout_width="200dp"
                 android:layout_height="match_parent"
                 android:fillViewport="true">
+
                 <LinearLayout
                     android:id="@+id/fixed_move_list_container"
                     android:layout_width="match_parent"
@@ -74,7 +77,21 @@
                         android:id="@+id/main_table_container"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical" />
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/difficulty_column_container"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+
+                        <LinearLayout
+                            android:id="@+id/data_columns_container"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+
+                    </LinearLayout>
                 </ScrollView>
             </HorizontalScrollView>
         </LinearLayout>

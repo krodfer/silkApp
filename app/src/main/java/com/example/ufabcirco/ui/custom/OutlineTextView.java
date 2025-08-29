@@ -61,9 +61,12 @@ public class OutlineTextView extends AppCompatTextView {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        int desiredWidth = getMeasuredWidth() + (int) (outlineWidth * 2);
+        int desiredHeight = getMeasuredHeight() + (int) (outlineWidth * 2);
 
-        int newHeight   = (int) (getMeasuredHeight() + outlineWidth * 2);
-        int newWidth    = (int) (getMeasuredWidth() + outlineWidth * 2);
+        int newWidth = resolveSize(desiredWidth, widthMeasureSpec);
+        int newHeight = resolveSize(desiredHeight, heightMeasureSpec);
+
         setMeasuredDimension(newWidth, newHeight);
     }
 }
