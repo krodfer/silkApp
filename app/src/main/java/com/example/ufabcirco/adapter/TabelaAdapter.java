@@ -82,6 +82,7 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
 
     public static class TabelaViewHolder extends RecyclerView.ViewHolder {
         private final OutlineTextView moveLetter;
+        private final TextView movimentoTextView;
         private final LinearLayout statusCellsContainer;
         private final Context context;
         private final OnMoveClickListener cellClickListener;
@@ -91,6 +92,7 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
             context = itemView.getContext();
             this.cellClickListener = cellClickListener;
             moveLetter = itemView.findViewById(R.id.text_view_move_letter);
+            movimentoTextView = itemView.findViewById(R.id.text_view_move_letter);
             statusCellsContainer = itemView.findViewById(R.id.status_cells_container);
         }
 

@@ -131,7 +131,7 @@ public class FilaFragment extends Fragment {
 
             if (statusValue != 0) {
                 if (relevantMovesCount == 0) {
-                    sb.append("Movimentos:\n");
+                    sb.append("Movimentoss:\n");
                 }
                 sb.append("- ").append(entry.getKey()).append(statusText).append("\n");
                 relevantMovesCount++;

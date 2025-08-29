@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center">
+
+    <ImageButton
+        android:id="@+id/btn_white"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="4dp"
+        android:background="@drawable/circle_white"
+        android:contentDescription="Status: Branco" />
+
+    <ImageButton
+        android:id="@+id/btn_yellow"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="4dp"
+        android:background="@drawable/circle_yellow"
+        android:contentDescription="Status: Já fez" />
+
+    <ImageButton
+        android:id="@+id/btn_blue"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="4dp"
+        android:background="@drawable/circle_blue"
+        android:contentDescription="Status: Aprendeu" />
+
+    <ImageButton
+        android:id="@+id/btn_red"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="4dp"
+        android:background="@drawable/circle_red"
+        android:contentDescription="Status: Não consegue" />
+</LinearLayout>

@@ -2,6 +2,7 @@ package com.example.ufabcirco.ui;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -15,6 +16,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
+import android.widget.PopupWindow;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -70,11 +73,13 @@ public class TabelaFragment extends Fragment {
     private LinearLayout headerNamesContainer;
     private HorizontalScrollView mainHorizontalScrollView;
     private ScrollView fixedMoveColumnScrollView;
+    private ScrollView fixedDifficultyColumnScrollView;
     private ScrollView mainTableScrollView;
     private FloatingActionButton fabExport, fabImport;
     private HorizontalScrollView headerNamesScrollView;
     private LinearLayout difficultyColumnContainer;
     private LinearLayout dataColumnsContainer;
+    private ProgressBar progressBar;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -111,12 +116,7 @@ public class TabelaFragment extends Fragment {
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_tabela, container, false);
-    }
-
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+        View view = inflater.inflate(R.layout.fragment_tabela, container, false);
         this.context = requireContext();
 
         fixedMoveListContainer = view.findViewById(R.id.fixed_move_list_container);
@@ -128,7 +128,7 @@ public class TabelaFragment extends Fragment {
         headerNamesScrollView = view.findViewById(R.id.header_names_scroll_view);
         difficultyColumnContainer = view.findViewById(R.id.difficulty_column_container);
         dataColumnsContainer = view.findViewById(R.id.data_columns_container);
-
+        progressBar = view.findViewById(R.id.progress_bar);
 
         fabExport = view.findViewById(R.id.fab_export_csv);
         fabImport = view.findViewById(R.id.fab_import_csv);
@@ -149,12 +149,12 @@ public class TabelaFragment extends Fragment {
         circoViewModel.getMasterList().observe(getViewLifecycleOwner(), pessoas -> {
             currentPessoaList = pessoas;
             updateHeaders(pessoas);
-            updateTable();
+            updateTable(currentPessoaList, currentMoveList);
         });
 
         circoViewModel.getMoveList().observe(getViewLifecycleOwner(), moves -> {
             currentMoveList = moves;
-            updateTable();
+            updateTable(currentPessoaList, currentMoveList);
         });
 
         fixedMoveColumnScrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
@@ -172,10 +172,17 @@ public class TabelaFragment extends Fragment {
         }
 
         handler.post(syncRunnable);
+
+        return view;
     }
 
-    private void updateTable() {
-        if (currentPessoaList == null || currentMoveList == null) return;
+    private void updateTable(List<Pessoa> pessoaList, List<Movimento> moveList) {
+        if (pessoaList == null || moveList == null || pessoaList.isEmpty() || moveList.isEmpty()) {
+            progressBar.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        progressBar.setVisibility(View.GONE);
 
         int savedScrollX = mainHorizontalScrollView.getScrollX();
         int savedScrollY = mainTableScrollView.getScrollY();
@@ -185,7 +192,7 @@ public class TabelaFragment extends Fragment {
         dataColumnsContainer.removeAllViews();
 
 
-        for (Movimento move : currentMoveList) {
+        for (Movimento move : moveList) {
             OutlineTextView moveNameCell = new OutlineTextView(context);
             LinearLayout.LayoutParams moveNameParams = new LinearLayout.LayoutParams(dpToPx(200, context), dpToPx(45, context));
             moveNameParams.setMargins(dpToPx(1, context), dpToPx(1, context), dpToPx(1, context), dpToPx(1, context));
@@ -222,7 +229,7 @@ public class TabelaFragment extends Fragment {
             LinearLayout rowLayout = new LinearLayout(context);
             rowLayout.setOrientation(LinearLayout.HORIZONTAL);
 
-            for (Pessoa pessoa : currentPessoaList) {
+            for (Pessoa pessoa : pessoaList) {
                 TextView cell = new TextView(context);
                 LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dpToPx(150, context), dpToPx(45, context));
                 params.setMargins(dpToPx(1, context), dpToPx(1, context), dpToPx(1, context), dpToPx(1, context));
@@ -236,6 +243,11 @@ public class TabelaFragment extends Fragment {
 
                 cell.setOnClickListener(v -> {
                     circoViewModel.cycleMoveStatus(pessoa.getId(), move.getNome());
+                });
+
+                cell.setOnLongClickListener(v -> {
+                    showStatusMenu(v, pessoa.getId(), move.getNome());
+                    return true;
                 });
 
                 rowLayout.addView(cell);
@@ -258,6 +270,44 @@ public class TabelaFragment extends Fragment {
         }
         cell.setBackground(cellBackground);
     }
+
+    private void showStatusMenu(View view, String pessoaId, String moveName) {
+        LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View popupView = inflater.inflate(R.layout.custom_status_menu, null);
+
+        final PopupWindow popupWindow = new PopupWindow(
+                popupView,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+
+        popupView.findViewById(R.id.btn_white).setOnClickListener(v -> {
+            circoViewModel.setMoveStatus(pessoaId, moveName, 0);
+            popupWindow.dismiss();
+        });
+
+        popupView.findViewById(R.id.btn_yellow).setOnClickListener(v -> {
+            circoViewModel.setMoveStatus(pessoaId, moveName, 1);
+            popupWindow.dismiss();
+        });
+
+        popupView.findViewById(R.id.btn_blue).setOnClickListener(v -> {
+            circoViewModel.setMoveStatus(pessoaId, moveName, 2);
+            popupWindow.dismiss();
+        });
+
+        popupView.findViewById(R.id.btn_red).setOnClickListener(v -> {
+            circoViewModel.setMoveStatus(pessoaId, moveName, 3);
+            popupWindow.dismiss();
+        });
+
+        popupWindow.setOutsideTouchable(true);
+        popupWindow.setFocusable(true);
+        popupWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+
+        popupWindow.showAsDropDown(view, -35, -view.getHeight() - 5);
+    }
+
 
     private void syncData() {
         if (isSyncing || !isOnline()) {
@@ -490,7 +540,6 @@ public class TabelaFragment extends Fragment {
 
     private void updateHeaders(List<Pessoa> personList) {
         if (headerNamesContainer == null || context == null || personList == null) return;
-
         headerNamesContainer.removeAllViews();
 
         TextView difficultyHeader = new TextView(context);
