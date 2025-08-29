@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
@@ -221,8 +222,11 @@ public class TabelaFragment extends Fragment {
             difficultyValueCell.setGravity(Gravity.CENTER);
             difficultyValueCell.setPadding(dpToPx(4, context), dpToPx(4, context), dpToPx(4, context), dpToPx(4, context));
             difficultyValueCell.setBackgroundColor(Color.WHITE);
-            difficultyValueCell.setText(String.format("⭐ %.2f", (double) move.getDificuldade()));
+            difficultyValueCell.setText(String.format("⭐ %.2f", move.getMediaDificuldade()));
             difficultyValueCell.setTextColor(Color.BLACK);
+
+            difficultyValueCell.setOnClickListener(v -> showStarRatingMenu(v, move.getNome()));
+
             difficultyColumnContainer.addView(difficultyValueCell);
 
 
@@ -308,6 +312,43 @@ public class TabelaFragment extends Fragment {
         popupWindow.showAsDropDown(view, -35, -view.getHeight() - 5);
     }
 
+    private void showStarRatingMenu(View view, String moveName) {
+        LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View popupView = inflater.inflate(R.layout.star_rating_menu, null);
+
+        final PopupWindow popupWindow = new PopupWindow(
+                popupView,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+
+        popupView.findViewById(R.id.btn_star_1).setOnClickListener(v -> {
+            circoViewModel.addDificuldade(moveName, 1);
+            popupWindow.dismiss();
+        });
+        popupView.findViewById(R.id.btn_star_2).setOnClickListener(v -> {
+            circoViewModel.addDificuldade(moveName, 2);
+            popupWindow.dismiss();
+        });
+        popupView.findViewById(R.id.btn_star_3).setOnClickListener(v -> {
+            circoViewModel.addDificuldade(moveName, 3);
+            popupWindow.dismiss();
+        });
+        popupView.findViewById(R.id.btn_star_4).setOnClickListener(v -> {
+            circoViewModel.addDificuldade(moveName, 4);
+            popupWindow.dismiss();
+        });
+        popupView.findViewById(R.id.btn_star_5).setOnClickListener(v -> {
+            circoViewModel.addDificuldade(moveName, 5);
+            popupWindow.dismiss();
+        });
+
+        popupWindow.setOutsideTouchable(true);
+        popupWindow.setFocusable(true);
+        popupWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        popupWindow.showAsDropDown(view, 100, -90);
+    }
+
 
     private void syncData() {
         if (isSyncing || !isOnline()) {
@@ -375,8 +416,22 @@ public class TabelaFragment extends Fragment {
                     for (int i = 0; i < moveNames.size(); i++) {
                         String name = moveNames.get(i);
                         int type = typesArr.getInt(i + 1);
-                        int difficulty = difficultiesArr.getInt(i + 1);
-                        tempMoves.add(new Movimento(name, type, difficulty));
+
+                        List<Integer> dificuldadesList = new ArrayList<>();
+                        if (difficultiesArr.length() > i + 1) {
+                            String dificuldadesString = difficultiesArr.getString(i + 1);
+                            if (dificuldadesString != null && !dificuldadesString.isEmpty()) {
+                                String[] valores = dificuldadesString.replace("[", "").replace("]", "").split(",");
+                                for (String valor : valores) {
+                                    try {
+                                        dificuldadesList.add(Integer.parseInt(valor.trim()));
+                                    } catch (NumberFormatException e) {
+                                        Log.e(TAG, "Erro ao converter valor de dificuldade: " + valor, e);
+                                    }
+                                }
+                            }
+                        }
+                        tempMoves.add(new Movimento(name, type, dificuldadesList));
                     }
 
                     for (int j = 3; j < values.length(); j++) {
@@ -396,7 +451,7 @@ public class TabelaFragment extends Fragment {
 
                     List<Movimento> sortedMoves = tempMoves.stream()
                             .sorted(Comparator.comparingInt(Movimento::getTipo).reversed()
-                                    .thenComparing(Comparator.comparingInt(Movimento::getDificuldade).reversed()))
+                                    .thenComparing(Comparator.comparingDouble(Movimento::getMediaDificuldade).reversed()))
                             .collect(Collectors.toList());
 
                     List<Pessoa> currentPeople = circoViewModel.getMasterList().getValue();
@@ -483,7 +538,7 @@ public class TabelaFragment extends Fragment {
         List<Object> difficultiesRow = new ArrayList<>();
         difficultiesRow.add("Dificuldade!");
         for (Movimento move : moveList) {
-            difficultiesRow.add(move.getDificuldade());
+            difficultiesRow.add(move.getDificuldades().toString());
         }
         dataToWrite.add(difficultiesRow);
 
@@ -540,6 +595,7 @@ public class TabelaFragment extends Fragment {
 
     private void updateHeaders(List<Pessoa> personList) {
         if (headerNamesContainer == null || context == null || personList == null) return;
+
         headerNamesContainer.removeAllViews();
 
         TextView difficultyHeader = new TextView(context);

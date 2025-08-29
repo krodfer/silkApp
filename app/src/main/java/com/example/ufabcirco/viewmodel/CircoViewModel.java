@@ -126,6 +126,24 @@ public class CircoViewModel extends ViewModel {
         notifyLocalModification();
     }
 
+    public void addDificuldade(String moveName, int novaDificuldade) {
+        if (moveName == null || novaDificuldade < 1 || novaDificuldade > 5) {
+            return;
+        }
+
+        List<Movimento> currentMoveList = _moveList.getValue();
+        if (currentMoveList != null) {
+            for (Movimento movimento : currentMoveList) {
+                if (movimento.getNome().equals(moveName)) {
+                    movimento.addDificuldade(novaDificuldade);
+                    break;
+                }
+            }
+            _moveList.setValue(currentMoveList);
+            notifyLocalModification();
+        }
+    }
+
     public boolean isInstructor(String personName) {
         return instructorNames.contains(personName);
     }

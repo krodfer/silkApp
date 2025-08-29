@@ -2,12 +2,28 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:orientation="horizontal">
+    android:orientation="horizontal"
+    android:paddingEnd="16dp">
+
+    <TextView
+        android:id="@+id/text_view_move_letter"
+        android:layout_width="80dp"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="A"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/text_view_dificuldade"
+        android:layout_width="80dp"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="⭐ 3.5"
+        android:textStyle="bold" />
 
     <LinearLayout
         android:id="@+id/status_cells_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingEnd="16dp"/>
+        android:orientation="horizontal" />
 </LinearLayout>
