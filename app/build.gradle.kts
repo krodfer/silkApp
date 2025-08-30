@@ -66,12 +66,16 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.appcompat)
 
+
     testImplementation(libs.junit)
 
 
     implementation("com.google.api-client:google-api-client-android:1.23.0")
     implementation("com.google.apis:google-api-services-sheets:v4-rev20220308-1.32.1")
     implementation("com.google.auth:google-auth-library-oauth2-http:0.21.1")
+    implementation("com.github.bumptech.glide:glide:4.12.0")
+
+    annotationProcessor("com.github.bumptech.glide:compiler:4.12.0")
 
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

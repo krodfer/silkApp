@@ -16,7 +16,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
-import android.widget.PopupMenu;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
@@ -59,13 +58,16 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TabelaFragment extends Fragment {
 
     private static final String SPREADSHEET_ID = "17g23jX5Su4rlUKW5Htq9pZRboW_5GxJieoYDlcTJe_w";
     private static final String API_KEY = "AIzaSyC2Af7CSAT3Aees4gg1PMB3NmTPhdwVxUA";
-    private static final String RANGE = "Moves!A1:BZ100";
+    private static final String MOVES_RANGE = "Moves!A1:BZ100";
+    private static final String LINKS_RANGE = "Links!A1:BZ10";
     private static final String TAG = "TabelaFragment";
 
     private CircoViewModel circoViewModel;
@@ -74,7 +76,6 @@ public class TabelaFragment extends Fragment {
     private LinearLayout headerNamesContainer;
     private HorizontalScrollView mainHorizontalScrollView;
     private ScrollView fixedMoveColumnScrollView;
-    private ScrollView fixedDifficultyColumnScrollView;
     private ScrollView mainTableScrollView;
     private FloatingActionButton fabExport, fabImport;
     private HorizontalScrollView headerNamesScrollView;
@@ -213,6 +214,11 @@ public class TabelaFragment extends Fragment {
             moveNameCell.setTextColor(textColor);
             moveNameCell.setOutlineColor(Color.BLACK);
             moveNameCell.setOutlineWidth(4.0f);
+
+            moveNameCell.setOnClickListener(v -> {
+                MovimentoDetailFragment.newInstance(move).show(getParentFragmentManager(), "MovimentoDetailFragment");
+            });
+
             fixedMoveListContainer.addView(moveNameCell);
 
             TextView difficultyValueCell = new TextView(context);
@@ -346,7 +352,7 @@ public class TabelaFragment extends Fragment {
         popupWindow.setOutsideTouchable(true);
         popupWindow.setFocusable(true);
         popupWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        popupWindow.showAsDropDown(view, 100, -90);
+        popupWindow.showAsDropDown(view, 0, 0);
     }
 
 
@@ -360,7 +366,7 @@ public class TabelaFragment extends Fragment {
                 if (lastLocalModificationTime > lastRemoteSyncTime) {
                     Log.d(TAG, "Mudança local detectada, enviando para o remoto...");
                     List<List<Object>> dataToWrite = prepareDataForExport();
-                    writeToGoogleSheet(SPREADSHEET_ID, RANGE, dataToWrite);
+                    writeToGoogleSheet(SPREADSHEET_ID, MOVES_RANGE, dataToWrite);
                 } else {
                     Log.d(TAG, "Sincronizando do remoto...");
                     readGoogleSheet();
@@ -383,45 +389,58 @@ public class TabelaFragment extends Fragment {
         executor.execute(() -> {
             HttpURLConnection urlConnection = null;
             try {
-                String urlString = "https://sheets.googleapis.com/v4/spreadsheets/" + SPREADSHEET_ID + "/values/" + RANGE + "?key=" + API_KEY;
-                URL url = new URL(urlString);
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("GET");
-                urlConnection.connect();
-                int responseCode = urlConnection.getResponseCode();
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    InputStream inputStream = urlConnection.getInputStream();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-                    StringBuilder responseJson = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        responseJson.append(line);
+                String movesUrlString = "https://sheets.googleapis.com/v4/spreadsheets/" + SPREADSHEET_ID + "/values/" + MOVES_RANGE + "?key=" + API_KEY;
+                String linksUrlString = "https://sheets.googleapis.com/v4/spreadsheets/" + SPREADSHEET_ID + "/values/" + LINKS_RANGE + "?key=" + API_KEY;
+
+                URL movesUrl = new URL(movesUrlString);
+                urlConnection = (HttpURLConnection) movesUrl.openConnection();
+                JSONObject movesJson = readUrlContent(urlConnection);
+                urlConnection.disconnect();
+
+                URL linksUrl = new URL(linksUrlString);
+                urlConnection = (HttpURLConnection) linksUrl.openConnection();
+                JSONObject linksJson = readUrlContent(urlConnection);
+                urlConnection.disconnect();
+
+                JSONArray movesValues = movesJson.getJSONArray("values");
+                JSONArray linksValues = linksJson.getJSONArray("values");
+
+                List<Pessoa> importedPeople = new ArrayList<>();
+                Map<String, Movimento> tempMovesMap = new HashMap<>();
+
+                Map<String, Map<String, String>> linksData = new HashMap<>();
+                if (linksValues.length() > 0) {
+                    JSONArray headerRow = linksValues.getJSONArray(0);
+                    for (int j = 1; j < headerRow.length(); j++) {
+                        String moveName = headerRow.getString(j);
+                        Map<String, String> moveData = new HashMap<>();
+                        for (int i = 1; i < linksValues.length(); i++) {
+                            JSONArray row = linksValues.getJSONArray(i);
+                            if (row.length() > 0 && row.length() > j) {
+                                String header = row.getString(0);
+                                String value = row.getString(j);
+                                moveData.put(header, value);
+                            }
+                        }
+                        linksData.put(moveName, moveData);
                     }
-                    reader.close();
+                }
 
-                    JSONObject jsonObject = new JSONObject(responseJson.toString());
-                    JSONArray values = jsonObject.getJSONArray("values");
+                JSONArray moveNamesArr = movesValues.getJSONArray(0);
+                JSONArray typesArr = movesValues.getJSONArray(1);
+                JSONArray difficultiesArr = movesValues.getJSONArray(2);
 
-                    List<Pessoa> importedPeople = new ArrayList<>();
-                    List<Movimento> tempMoves = new ArrayList<>();
-                    List<String> moveNames = new ArrayList<>();
+                for (int i = 1; i < moveNamesArr.length(); i++) {
+                    String name = moveNamesArr.getString(i);
+                    int type = typesArr.getInt(i);
 
-                    JSONArray moveNamesArr = values.getJSONArray(0);
-                    for (int i = 1; i < moveNamesArr.length(); i++) {
-                        moveNames.add(moveNamesArr.getString(i));
-                    }
-
-                    JSONArray typesArr = values.getJSONArray(1);
-                    JSONArray difficultiesArr = values.getJSONArray(2);
-                    for (int i = 0; i < moveNames.size(); i++) {
-                        String name = moveNames.get(i);
-                        int type = typesArr.getInt(i + 1);
-
-                        List<Integer> dificuldadesList = new ArrayList<>();
-                        if (difficultiesArr.length() > i + 1) {
-                            String dificuldadesString = difficultiesArr.getString(i + 1);
-                            if (dificuldadesString != null && !dificuldadesString.isEmpty()) {
-                                String[] valores = dificuldadesString.replace("[", "").replace("]", "").split(",");
+                    List<Integer> dificuldadesList = new ArrayList<>();
+                    if (difficultiesArr.length() > i) {
+                        String dificuldadesString = difficultiesArr.getString(i);
+                        if (dificuldadesString != null && !dificuldadesString.trim().isEmpty()) {
+                            String cleanedString = dificuldadesString.substring(1, dificuldadesString.length() - 1);
+                            if (!cleanedString.isEmpty()) {
+                                String[] valores = cleanedString.split(",");
                                 for (String valor : valores) {
                                     try {
                                         dificuldadesList.add(Integer.parseInt(valor.trim()));
@@ -431,46 +450,70 @@ public class TabelaFragment extends Fragment {
                                 }
                             }
                         }
-                        tempMoves.add(new Movimento(name, type, dificuldadesList));
                     }
 
-                    for (int j = 3; j < values.length(); j++) {
-                        JSONArray personValues = values.getJSONArray(j);
-                        String personName = personValues.getString(0);
-                        if (personName.isEmpty()) continue;
+                    List<String> fotos = new ArrayList<>();
+                    String texto = "";
+                    List<String> variantes = new ArrayList<>();
 
-                        Pessoa person = new Pessoa(personName);
-                        for (int i = 0; i < moveNames.size(); i++) {
-                            if (personValues.length() > i + 1) {
-                                int status = personValues.getInt(i + 1);
-                                person.getMoveStatus().put(moveNames.get(i), status);
+                    if (linksData.containsKey(name)) {
+                        Map<String, String> moveData = linksData.get(name);
+                        String fotosString = moveData.getOrDefault("Foto!", "[]");
+                        if (fotosString.startsWith("[") && fotosString.endsWith("]")) {
+                            String cleaned = fotosString.substring(1, fotosString.length() - 1);
+                            if (!cleaned.isEmpty()) {
+                                fotos = new ArrayList<>(Arrays.asList(cleaned.split(",")));
                             }
                         }
-                        importedPeople.add(person);
-                    }
-
-                    List<Movimento> sortedMoves = tempMoves.stream()
-                            .sorted(Comparator.comparingInt(Movimento::getTipo).reversed()
-                                    .thenComparing(Comparator.comparingDouble(Movimento::getMediaDificuldade).reversed()))
-                            .collect(Collectors.toList());
-
-                    List<Pessoa> currentPeople = circoViewModel.getMasterList().getValue();
-                    List<Movimento> currentMoves = circoViewModel.getMoveList().getValue();
-
-                    if (!isDataEqual(currentPeople, importedPeople) || !isMovesEqual(currentMoves, sortedMoves)) {
-                        handler.post(() -> {
-                            if (isAdded()) {
-                                circoViewModel.setMoveList(sortedMoves);
-                                circoViewModel.importMasterList(importedPeople);
-                                lastRemoteSyncTime = System.currentTimeMillis();
+                        String textoString = moveData.getOrDefault("Text!", "");
+                        if (textoString != null) {
+                            texto = textoString;
+                        }
+                        String variantesString = moveData.getOrDefault("Variantes!", "[]");
+                        if (variantesString.startsWith("[") && variantesString.endsWith("]")) {
+                            String cleaned = variantesString.substring(1, variantesString.length() - 1);
+                            if (!cleaned.isEmpty()) {
+                                variantes = new ArrayList<>(Arrays.asList(cleaned.split(",")));
                             }
-                        });
-                    } else {
-                        lastRemoteSyncTime = System.currentTimeMillis();
-                        Log.d(TAG, "Dados remotos e locais são idênticos. Nenhuma atualização.");
+                        }
                     }
+                    tempMovesMap.put(name, new Movimento(name, type, dificuldadesList, fotos, texto, variantes));
+                }
+
+                List<Movimento> sortedMoves = new ArrayList<>(tempMovesMap.values());
+                sortedMoves.sort(Comparator.comparingInt(Movimento::getTipo).reversed()
+                        .thenComparing(Comparator.comparingDouble(Movimento::getMediaDificuldade).reversed()));
+
+                for (int j = 3; j < movesValues.length(); j++) {
+                    JSONArray personValues = movesValues.getJSONArray(j);
+                    String personName = personValues.getString(0);
+                    if (personName.isEmpty()) continue;
+
+                    Pessoa person = new Pessoa(personName);
+                    for (int i = 1; i < moveNamesArr.length(); i++) {
+                        String moveName = moveNamesArr.getString(i);
+                        if (personValues.length() > i) {
+                            int status = personValues.getInt(i);
+                            person.getMoveStatus().put(moveName, status);
+                        }
+                    }
+                    importedPeople.add(person);
+                }
+
+                List<Pessoa> currentPeople = circoViewModel.getMasterList().getValue();
+                List<Movimento> currentMoves = circoViewModel.getMoveList().getValue();
+
+                if (!isDataEqual(currentPeople, importedPeople) || !isMovesEqual(currentMoves, sortedMoves)) {
+                    handler.post(() -> {
+                        if (isAdded()) {
+                            circoViewModel.setMoveList(sortedMoves);
+                            circoViewModel.importMasterList(importedPeople);
+                            lastRemoteSyncTime = System.currentTimeMillis();
+                        }
+                    });
                 } else {
-                    Log.e(TAG, "Erro na requisição: " + responseCode);
+                    lastRemoteSyncTime = System.currentTimeMillis();
+                    Log.d(TAG, "Dados remotos e locais são idênticos. Nenhuma atualização.");
                 }
             } catch (Throwable t) {
                 Log.e(TAG, "Erro ao ler a planilha", t);
@@ -487,30 +530,21 @@ public class TabelaFragment extends Fragment {
         });
     }
 
-    private boolean isDataEqual(List<Pessoa> list1, List<Pessoa> list2) {
-        if (list1 == null && list2 == null) return true;
-        if (list1 == null || list2 == null || list1.size() != list2.size()) {
-            return false;
-        }
-        for (int i = 0; i < list1.size(); i++) {
-            if (!list1.get(i).equals(list2.get(i))) {
-                return false;
+    private JSONObject readUrlContent(HttpURLConnection urlConnection) throws Exception {
+        int responseCode = urlConnection.getResponseCode();
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+            InputStream inputStream = urlConnection.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+            StringBuilder responseJson = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                responseJson.append(line);
             }
+            reader.close();
+            return new JSONObject(responseJson.toString());
+        } else {
+            throw new Exception("Erro na requisição: " + responseCode);
         }
-        return true;
-    }
-
-    private boolean isMovesEqual(List<Movimento> list1, List<Movimento> list2) {
-        if (list1 == null && list2 == null) return true;
-        if (list1 == null || list2 == null || list1.size() != list2.size()) {
-            return false;
-        }
-        for (int i = 0; i < list1.size(); i++) {
-            if (!list1.get(i).equals(list2.get(i))) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private List<List<Object>> prepareDataForExport() {
@@ -653,5 +687,31 @@ public class TabelaFragment extends Fragment {
 
     public static TabelaFragment newInstance() {
         return new TabelaFragment();
+    }
+
+    private boolean isDataEqual(List<Pessoa> list1, List<Pessoa> list2) {
+        if (list1 == null && list2 == null) return true;
+        if (list1 == null || list2 == null || list1.size() != list2.size()) {
+            return false;
+        }
+        for (int i = 0; i < list1.size(); i++) {
+            if (!list1.get(i).equals(list2.get(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isMovesEqual(List<Movimento> list1, List<Movimento> list2) {
+        if (list1 == null && list2 == null) return true;
+        if (list1 == null || list2 == null || list1.size() != list2.size()) {
+            return false;
+        }
+        for (int i = 0; i < list1.size(); i++) {
+            if (!list1.get(i).equals(list2.get(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 }
