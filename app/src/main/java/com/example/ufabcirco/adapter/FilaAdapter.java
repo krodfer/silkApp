@@ -8,19 +8,22 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.example.ufabcirco.R;
 import com.example.ufabcirco.model.Pessoa;
 import com.google.android.flexbox.FlexboxLayout;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
 import java.util.function.Consumer;
 
 public class FilaAdapter extends RecyclerView.Adapter<FilaAdapter.FilaViewHolder> {
-
     private List<Pessoa> personList = new ArrayList<>();
     private String selectedPessoaId = null;
     private int selectionColor = Color.TRANSPARENT;
@@ -31,6 +34,21 @@ public class FilaAdapter extends RecyclerView.Adapter<FilaAdapter.FilaViewHolder
     public FilaAdapter(Consumer<Pessoa> onItemClickListener, Consumer<Pessoa> onRemoveClickListener) {
         this.onItemClickListener = onItemClickListener;
         this.onRemoveClickListener = onRemoveClickListener;
+    }
+
+    public void swapItems(int fromPosition, int toPosition) {
+        if (personList.isEmpty()){
+            return;
+        }
+        int realFrom = fromPosition % personList.size();
+        int realTo = toPosition % personList.size();
+
+        Collections.swap(personList, realFrom, realTo);
+        notifyItemMoved(fromPosition, toPosition);
+    }
+
+    public List<Pessoa> getPersonList() {
+        return personList;
     }
 
     public void setFilaPessoas(List<Pessoa> newPersonList) {
@@ -55,7 +73,9 @@ public class FilaAdapter extends RecyclerView.Adapter<FilaAdapter.FilaViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull FilaViewHolder holder, int position) {
-        if (personList.isEmpty()) return;
+        if (personList.isEmpty()){
+            return;
+        }
         Pessoa pessoa = personList.get(position % personList.size());
         boolean isCurrentlySelected = pessoa.getId().equals(selectedPessoaId);
         holder.bind(pessoa, onItemClickListener, onRemoveClickListener,
@@ -65,6 +85,10 @@ public class FilaAdapter extends RecyclerView.Adapter<FilaAdapter.FilaViewHolder
     @Override
     public int getItemCount() {
         return personList.isEmpty() ? 0 : Integer.MAX_VALUE;
+    }
+
+    public String getSelectedPessoaId() {
+        return selectedPessoaId;
     }
 
     class FilaViewHolder extends RecyclerView.ViewHolder {

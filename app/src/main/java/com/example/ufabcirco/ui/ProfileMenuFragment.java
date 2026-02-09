@@ -88,7 +88,9 @@ public class ProfileMenuFragment extends DialogFragment {
     }
 
     private void resizeDialog() {
-        if (getDialog() == null || getDialog().getWindow() == null) return;
+        if (getDialog() == null || getDialog().getWindow() == null) {
+            return;
+        }
 
         int finalWidth = (int) (baseWidth * scaleFactor);
         int finalHeight = (int) (finalWidth * aspectRatio);
@@ -158,7 +160,9 @@ public class ProfileMenuFragment extends DialogFragment {
     }
 
     private void appendMoveWithSpans(SpannableStringBuilder builder, Pair<Movimento, Integer> movePair, float iconSize) {
-        if (getContext() == null) return;
+        if (getContext() == null) {
+            return;
+        }
 
         Movimento move = movePair.first;
         int status = movePair.second;

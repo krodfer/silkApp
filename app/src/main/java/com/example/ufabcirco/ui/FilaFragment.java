@@ -4,23 +4,29 @@ import android.app.AlertDialog;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.ItemTouchHelper;
+
 import com.example.ufabcirco.R;
 import com.example.ufabcirco.adapter.FilaAdapter;
 import com.example.ufabcirco.model.Pessoa;
 import com.example.ufabcirco.viewmodel.CircoViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -58,6 +64,58 @@ public class FilaFragment extends Fragment {
         );
 
         recyclerViewFila.setAdapter(filaAdapter);
+
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(
+                ItemTouchHelper.UP | ItemTouchHelper.DOWN,
+                ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT
+        ) {
+            @Override
+            public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                int position = viewHolder.getAdapterPosition();
+                if (position == RecyclerView.NO_POSITION) return makeMovementFlags(0, 0);
+
+                List<Pessoa> lista = filaAdapter.getPersonList();
+                Pessoa pessoaNoViewHolder = lista.get(position % lista.size());
+
+                if (pessoaNoViewHolder.getId().equals(filaAdapter.getSelectedPessoaId())) {
+                    int dragFlags = ItemTouchHelper.UP | ItemTouchHelper.DOWN;
+                    int swipeFlags = ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT;
+                    return makeMovementFlags(dragFlags, swipeFlags);
+                }
+
+                return makeMovementFlags(0, 0);
+            }
+
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                int from = viewHolder.getAdapterPosition();
+                int to = target.getAdapterPosition();
+
+                filaAdapter.swapItems(from, to);
+                return true;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+                List<Pessoa> atual = filaAdapter.getPersonList();
+                if (!atual.isEmpty()) {
+                    Pessoa pessoaParaRemover = atual.get(position % atual.size());
+                    circoViewModel.removePersonFromQueue(pessoaParaRemover);
+                    Toast.makeText(getContext(), pessoaParaRemover.getNome() + " removido(a)", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                super.clearView(recyclerView, viewHolder);
+
+                circoViewModel.updateQueueOrder(filaAdapter.getPersonList());
+            }
+        });
+
+        itemTouchHelper.attachToRecyclerView(recyclerViewFila);
+
         recyclerViewFila.setLayoutManager(new LinearLayoutManager(getContext()));
 
         setupObservers();
@@ -156,7 +214,9 @@ public class FilaFragment extends Fragment {
     }
 
     private void showAddPersonDialog() {
-        if(getContext() == null) return;
+        if(getContext() == null) {
+            return;
+        }
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         builder.setTitle("Adicionar Pessoa à Fila");
 
@@ -187,13 +247,17 @@ public class FilaFragment extends Fragment {
     }
 
     private void showCreateNewPersonDialog(String name) {
-        if (getContext() == null) return;
+        if (getContext() == null) {
+            return;
+        }
         new AlertDialog.Builder(getContext())
                 .setTitle("Pessoa não encontrada")
                 .setMessage("Ninguém encontrado com o nome '"+ name +"'. Deseja criar e adicionar uma nova pessoa à fila?")
                 .setPositiveButton("Sim", (d, w) -> {
                     String result = circoViewModel.createNewPersonAndAddToQueue(name);
-                    if (getContext() == null) return;
+                    if (getContext() == null) {
+                        return;
+                    }
                     if ("SUCCESS".equals(result)) {
                         Toast.makeText(getContext(), name + " foi criado(a) e adicionado(a) à fila.", Toast.LENGTH_LONG).show();
                     } else if ("DUPLICATE_MASTER".equals(result)) {
@@ -207,7 +271,9 @@ public class FilaFragment extends Fragment {
     }
 
     private void showMultipleMatchesDialog(List<Pessoa> matches) {
-        if(getContext() == null) return;
+        if(getContext() == null) {
+            return;
+        }
         CharSequence[] names = matches.stream().map(Pessoa::getNome).toArray(CharSequence[]::new);
 
         new AlertDialog.Builder(requireContext())
@@ -222,7 +288,9 @@ public class FilaFragment extends Fragment {
 
     private void addPersonToQueue(Pessoa pessoa) {
         String result = circoViewModel.addPersonToQueue(pessoa);
-        if (getContext() == null) return;
+        if (getContext() == null) {
+            return;
+        }
 
         switch (result) {
             case "SUCCESS":

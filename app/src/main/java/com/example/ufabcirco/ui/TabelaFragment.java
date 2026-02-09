@@ -4,16 +4,20 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
+
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
@@ -21,12 +25,20 @@ import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.Spinner;
+import android.widget.RatingBar;
+import android.widget.EditText;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+
+import android.app.AlertDialog;
+import android.text.SpannableStringBuilder;
+import android.text.Spannable;
 
 import com.example.ufabcirco.BuildConfig;
 import com.example.ufabcirco.R;
@@ -61,15 +73,6 @@ import java.util.concurrent.Executors;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-
-import android.app.AlertDialog;
-import android.widget.Spinner;
-import android.widget.RatingBar;
-import androidx.core.content.res.ResourcesCompat;
-
-import android.widget.EditText;
-import android.text.SpannableStringBuilder;
-import android.text.Spannable;
 
 public class TabelaFragment extends Fragment {
 
@@ -496,7 +499,9 @@ public class TabelaFragment extends Fragment {
     }
 
     private void readGoogleSheet() {
-        if (context == null) return;
+        if (context == null) {
+            return;
+        }
         executor.execute(() -> {
             HttpURLConnection urlConnection = null;
             try {
@@ -642,7 +647,9 @@ public class TabelaFragment extends Fragment {
     }
 
     private void writeToGoogleSheet(String spreadsheetId, String range, List<List<Object>> dataToWrite) {
-        if (context == null) return;
+        if (context == null) {
+            return;
+        }
         executor.execute(() -> {
             try {
                 Sheets sheetsService = getSheetsService();
@@ -668,7 +675,9 @@ public class TabelaFragment extends Fragment {
     }
 
     private void updateHeaders(List<Pessoa> personList) {
-        if (headerNamesContainer == null || context == null || personList == null) return;
+        if (headerNamesContainer == null || context == null || personList == null){
+            return;
+        }
 
         headerNamesContainer.removeAllViews();
 
@@ -712,7 +721,9 @@ public class TabelaFragment extends Fragment {
     }
 
     private void showProfileDialog(Pessoa pessoa) {
-        if (context == null || pessoa == null) return;
+        if (context == null || pessoa == null) {
+            return;
+        }
         if (getParentFragmentManager() != null) {
             ProfileMenuFragment.newInstance(pessoa).show(getParentFragmentManager(), "ProfileMenu");
         }

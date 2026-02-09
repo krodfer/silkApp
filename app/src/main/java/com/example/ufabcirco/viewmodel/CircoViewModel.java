@@ -416,6 +416,13 @@ public class CircoViewModel extends ViewModel {
         loadMorePosts();
     }
 
+    public void updateQueueOrder(List<Pessoa> newOrder) {
+        if (newOrder != null) {
+            _queueList.setValue(new ArrayList<>(newOrder));
+            notifyLocalModification();
+        }
+    }
+
     public void loadMorePosts() {
         if (shuffledPosts.isEmpty()) {
             return;

@@ -101,7 +101,9 @@ public class FilaFragment extends Fragment {
     }
 
     private void showProfileDialog(Pessoa pessoa) {
-        if(getContext() == null || pessoa == null) return;
+        if(getContext() == null || pessoa == null) {
+            return;
+        }
         new AlertDialog.Builder(requireContext())
                 .setTitle("Perfil de " + pessoa.getNome())
                 .setMessage(formatMoveStatusForDialog(pessoa.getMoveStatus()))
@@ -158,7 +160,9 @@ public class FilaFragment extends Fragment {
     }
 
     private void showAddPersonDialog() {
-        if(getContext() == null) return;
+        if(getContext() == null) {
+            return;
+        }
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         builder.setTitle("Adicionar Pessoa à Fila");
 
@@ -189,7 +193,9 @@ public class FilaFragment extends Fragment {
     }
 
     private void showMultipleMatchesDialog(List<Pessoa> matches) {
-        if(getContext() == null) return;
+        if(getContext() == null) {
+            return;
+        }
         CharSequence[] names = matches.stream().map(Pessoa::getNome).toArray(CharSequence[]::new);
 
         new AlertDialog.Builder(requireContext())
@@ -204,7 +210,9 @@ public class FilaFragment extends Fragment {
 
     private void addPersonToQueue(Pessoa pessoa) {
         String result = circoViewModel.addPersonToQueue(pessoa);
-        if (getContext() == null) return;
+        if (getContext() == null) {
+            return;
+        }
 
         switch (result) {
             case "SUCCESS":

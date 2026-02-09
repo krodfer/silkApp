@@ -63,7 +63,9 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
     }
 
     public void syncAllRowsToScroll(int scrollX, RecyclerView recyclerView, TabelaViewHolder excludedViewHolder) {
-        if (recyclerView == null) return;
+        if (recyclerView == null) {
+            return;
+        }
         setHorizontalScrollPosition(scrollX);
         for (int i = 0; i < recyclerView.getChildCount(); i++) {
             View child = recyclerView.getChildAt(i);
@@ -157,7 +159,9 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
             moveLetter.setOutlineColor(Color.BLACK);
             moveLetter.setOutlineWidth(4.0f);
 
-            if (currentPersonList == null) return;
+            if (currentPersonList == null){
+                return;
+            }
 
             for (int i = 0; i < numPerson; i++) {
                 Pessoa pessoa = currentPersonList.get(i);
