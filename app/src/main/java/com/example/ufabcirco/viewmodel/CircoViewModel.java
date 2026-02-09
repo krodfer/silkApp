@@ -83,6 +83,20 @@ public class CircoViewModel extends ViewModel {
         shuffleAndFilterPosts(null);
     }
 
+    public void addMovimento(Movimento novo) {
+        List<Movimento> moves = new ArrayList<>(_moveList.getValue());
+        moves.add(novo);
+        _moveList.setValue(moves);
+
+        List<Pessoa> pessoas = new ArrayList<>(_masterList.getValue());
+        for (Pessoa p : pessoas) {
+            p.getMoveStatus().put(novo.getNome(), 0);
+        }
+        _masterList.setValue(pessoas);
+
+        _localModificationEvent.setValue(true);
+    }
+
     public void cycleMoveStatus(String pessoaId, String move) {
         if (pessoaId == null || move == null) {
             return;

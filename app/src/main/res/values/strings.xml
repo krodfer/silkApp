@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">Silk</string>
+    <string-array name="tipos_movimento">
+        <item>Subida</item>
+        <item>Trava</item>
+        <item>Figura</item>
+        <item>Giro</item>
+        <item>Queda</item>
+    </string-array>
 </resources>

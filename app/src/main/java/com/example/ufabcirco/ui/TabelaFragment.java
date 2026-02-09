@@ -62,12 +62,20 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import android.app.AlertDialog;
+import android.widget.Spinner;
+import android.widget.RatingBar;
+import androidx.core.content.res.ResourcesCompat;
+
+import android.widget.EditText;
+import android.text.SpannableStringBuilder;
+import android.text.Spannable;
+
 public class TabelaFragment extends Fragment {
 
     private static final String SPREADSHEET_ID = "17g23jX5Su4rlUKW5Htq9pZRboW_5GxJieoYDlcTJe_w";
     private static final String API_KEY = "AIzaSyC2Af7CSAT3Aees4gg1PMB3NmTPhdwVxUA";
-    private static final String MOVES_RANGE = "Moves!A1:BZ100";
-    private static final String LINKS_RANGE = "Links!A1:BZ10";
+    private static final String MOVES_RANGE = "Moves!A1:DZ100";
     private static final String TAG = "TabelaFragment";
 
     private CircoViewModel circoViewModel;
@@ -132,11 +140,6 @@ public class TabelaFragment extends Fragment {
         dataColumnsContainer = view.findViewById(R.id.data_columns_container);
         progressBar = view.findViewById(R.id.progress_bar);
 
-        fabExport = view.findViewById(R.id.fab_export_csv);
-        fabImport = view.findViewById(R.id.fab_import_csv);
-        fabExport.setVisibility(View.GONE);
-        fabImport.setVisibility(View.GONE);
-
         circoViewModel = new ViewModelProvider(requireActivity()).get(CircoViewModel.class);
 
         circoViewModel.getLocalModificationEvent().observe(getViewLifecycleOwner(), isModified -> {
@@ -174,6 +177,76 @@ public class TabelaFragment extends Fragment {
         }
 
         handler.post(syncRunnable);
+
+        view.findViewById(R.id.fab_add_movimento).setOnClickListener(v -> showAddMovimentoDialog());
+
+        view.findViewById(R.id.fab_help).setOnClickListener(v -> {
+            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+
+            TextView title = new TextView(context);
+            title.setText("Ajuda");
+            title.setGravity(Gravity.CENTER);
+            title.setPadding(-300, 90, 0, 20);
+            title.setTextColor(Color.BLACK);
+            title.setTextSize(28);
+            title.setTypeface(ResourcesCompat.getFont(context, R.font.pacifico));
+
+            ScrollView scrollView = new ScrollView(context);
+            LinearLayout helpContainer = new LinearLayout(context);
+            helpContainer.setOrientation(LinearLayout.VERTICAL);
+            helpContainer.setPadding(200, 100, 120, 400);
+
+            TextView msg = new TextView(context);
+            msg.setTypeface(ResourcesCompat.getFont(context, R.font.quicksand));
+            msg.setTextSize(16);
+            msg.setTextColor(Color.parseColor("#333333"));
+            msg.setLineSpacing(0, 1.2f);
+
+            SpannableStringBuilder ssb = new SpannableStringBuilder();
+
+            appendSection(ssb, "Aba Fila\n", "• Use o [+] para cadastrar novos usuários ou/e adicionar na fila.\n" +
+                                    "• Segure e arraste um nome para reorganizar a ordem de subida.");
+
+            appendSection(ssb, "\n\nAba Tabela\n", "As colunas são os alunos e as linhas os movimentos. Toque ou segure em uma célula para alterar o status:\n");
+
+            appendStatus(ssb, "\n   ⚪ BRANCO", ": Nunca tentou o movimento.");
+            appendStatus(ssb, "\n   🟡 JÁ FEZ", ": Já realizou o movimento antes.", Color.parseColor("#FFD700"));
+            appendStatus(ssb, "\n   🔵 APRENDEU", ": Já sabe fazer com domínio.", Color.parseColor("#45aaf7"));
+            appendStatus(ssb, "\n   🔴 NÃO CONSEGUE", ": Não consegue fazer de forma alguma.\n\n", Color.parseColor("#fa5f5f"));
+
+            appendSection(ssb, "",  "• A coluna estrela é a dificuldade, uma média de como as pessoas julgaram os movimentos. Sinta-se livre para dar a sua nota e deixar mais justo, clicando na célula e escolhendo uma opção.\n" +
+                                                "• Toque no NOME do movimento para ver fotos, vídeos e descrição técnica.\n" +
+                                                "• Na descrição, nomes em destaque levam você para outros movimentos.\n" +
+                                                "• Use o [+] para cadastrar novos movimentos na lista.\n\n" +
+                                                "A coluna Movimento é separada em cores:");
+
+            appendStatus(ssb, "\n   Quedas, ", "", Color.parseColor("#ff7700"));
+            appendStatus(ssb, "Giros, ", "", Color.parseColor("#FED8B1"));
+            appendStatus(ssb, "Figuras, ", "", Color.parseColor("#FF69B4"));
+            appendStatus(ssb, "Travas, ", "e ", Color.parseColor("#90EE90"));
+            appendStatus(ssb, "Subidas", "", Color.parseColor("#00FF00"));
+
+            appendSection(ssb, "","\n\nEstá ordenado por dificuldade, dentro de cada tipo de movimento. Quanto mais para cima, mais difícil!\n\n");
+            appendSection(ssb, "","• Toque no NOME do aluno na tabela para abrir o perfil dele. Nomes em roxo são de instrutores.");
+
+            appendSection(ssb, "\n\nGaleria\n", "• Na aba galeria estão todos os videos e fotos dos movimentos adicionados até agora.");
+
+            msg.setText(ssb);
+
+            helpContainer.addView(msg);
+            scrollView.addView(helpContainer);
+
+            builder.setCustomTitle(title)
+                    .setView(scrollView);
+
+            AlertDialog dialog = builder.create();
+
+            if (dialog.getWindow() != null) {
+                dialog.getWindow().setBackgroundDrawableResource(R.drawable.bg_profile_menu);
+            }
+
+            dialog.show();
+        });
 
         return view;
     }
@@ -318,6 +391,44 @@ public class TabelaFragment extends Fragment {
         popupWindow.showAsDropDown(view, -35, -view.getHeight() - 5);
     }
 
+    private void showAddMovimentoDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+
+        TextView title = new TextView(context);
+        title.setText("Novo Movimento");
+        title.setPadding(0, 40, 0, 0);
+        title.setGravity(Gravity.CENTER);
+        title.setTextSize(24);
+        title.setTypeface(ResourcesCompat.getFont(context, R.font.pacifico));
+        builder.setCustomTitle(title);
+
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_add_movimento, null);
+        builder.setView(dialogView);
+
+        EditText editNome = dialogView.findViewById(R.id.edit_nome_movimento);
+        Spinner spinnerTipo = dialogView.findViewById(R.id.spinner_tipo);
+        RatingBar ratingDificuldade = dialogView.findViewById(R.id.rating_dificuldade);
+        EditText editDescricao = dialogView.findViewById(R.id.edit_descricao);
+        EditText editVariantes = dialogView.findViewById(R.id.edit_variantes);
+
+        builder.setPositiveButton("Adicionar", (dialog, which) -> {
+            String nome = editNome.getText().toString();
+            int tipo = spinnerTipo.getSelectedItemPosition();
+            int dificuldade = (int) ratingDificuldade.getRating();
+            String descricao = editDescricao.getText().toString();
+            List<String> variantes = Arrays.asList(editVariantes.getText().toString().split(","));
+
+            Movimento novo = new Movimento(nome, tipo, new ArrayList<>(Collections.singletonList(dificuldade)),
+                    new ArrayList<>(), descricao, variantes);
+
+            circoViewModel.addMovimento(novo);
+            Toast.makeText(context, "Movimento adicionado! Sincronizando...", Toast.LENGTH_SHORT).show();
+        });
+
+        builder.setNegativeButton("Cancelar", null);
+        builder.show();
+    }
+
     private void showStarRatingMenu(View view, String moveName) {
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View popupView = inflater.inflate(R.layout.star_rating_menu, null);
@@ -390,102 +501,42 @@ public class TabelaFragment extends Fragment {
             HttpURLConnection urlConnection = null;
             try {
                 String movesUrlString = "https://sheets.googleapis.com/v4/spreadsheets/" + SPREADSHEET_ID + "/values/" + MOVES_RANGE + "?key=" + API_KEY;
-                String linksUrlString = "https://sheets.googleapis.com/v4/spreadsheets/" + SPREADSHEET_ID + "/values/" + LINKS_RANGE + "?key=" + API_KEY;
-
                 URL movesUrl = new URL(movesUrlString);
                 urlConnection = (HttpURLConnection) movesUrl.openConnection();
                 JSONObject movesJson = readUrlContent(urlConnection);
                 urlConnection.disconnect();
 
-                URL linksUrl = new URL(linksUrlString);
-                urlConnection = (HttpURLConnection) linksUrl.openConnection();
-                JSONObject linksJson = readUrlContent(urlConnection);
-                urlConnection.disconnect();
-
                 JSONArray movesValues = movesJson.getJSONArray("values");
-                JSONArray linksValues = linksJson.getJSONArray("values");
-
                 List<Pessoa> importedPeople = new ArrayList<>();
                 Map<String, Movimento> tempMovesMap = new HashMap<>();
 
-                Map<String, Map<String, String>> linksData = new HashMap<>();
-                if (linksValues.length() > 0) {
-                    JSONArray headerRow = linksValues.getJSONArray(0);
-                    for (int j = 1; j < headerRow.length(); j++) {
-                        String moveName = headerRow.getString(j);
-                        Map<String, String> moveData = new HashMap<>();
-                        for (int i = 1; i < linksValues.length(); i++) {
-                            JSONArray row = linksValues.getJSONArray(i);
-                            if (row.length() > 0 && row.length() > j) {
-                                String header = row.getString(0);
-                                String value = row.getString(j);
-                                moveData.put(header, value);
-                            }
-                        }
-                        linksData.put(moveName, moveData);
-                    }
-                }
-
                 JSONArray moveNamesArr = movesValues.getJSONArray(0);
-                JSONArray typesArr = movesValues.getJSONArray(1);
-                JSONArray difficultiesArr = movesValues.getJSONArray(2);
+                JSONArray typesArr = (movesValues.length() > 1) ? movesValues.getJSONArray(1) : new JSONArray();
+                JSONArray difficultiesArr = (movesValues.length() > 2) ? movesValues.getJSONArray(2) : new JSONArray();
+                JSONArray photosArr = (movesValues.length() > 3) ? movesValues.getJSONArray(3) : new JSONArray();
+                JSONArray textsArr = (movesValues.length() > 5) ? movesValues.getJSONArray(5) : new JSONArray();
+                JSONArray variantsArr = (movesValues.length() > 6) ? movesValues.getJSONArray(6) : new JSONArray();
 
                 for (int i = 1; i < moveNamesArr.length(); i++) {
                     String name = moveNamesArr.getString(i);
-                    int type = typesArr.getInt(i);
+                    int type = typesArr.optInt(i, 0);
 
-                    List<Integer> dificuldadesList = new ArrayList<>();
-                    if (difficultiesArr.length() > i) {
-                        String dificuldadesString = difficultiesArr.getString(i);
-                        if (dificuldadesString != null && !dificuldadesString.trim().isEmpty()) {
-                            String cleanedString = dificuldadesString.substring(1, dificuldadesString.length() - 1);
-                            if (!cleanedString.isEmpty()) {
-                                String[] valores = cleanedString.split(",");
-                                for (String valor : valores) {
-                                    try {
-                                        dificuldadesList.add(Integer.parseInt(valor.trim()));
-                                    } catch (NumberFormatException e) {
-                                        Log.e(TAG, "Erro ao converter valor de dificuldade: " + valor, e);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    List<Integer> diffs = parseListInteger(difficultiesArr.optString(i, "[]"));
+                    List<String> fotos = parseListString(photosArr.optString(i, "[]"));
+                    String texto = textsArr.optString(i, "");
+                    List<String> variantes = parseListString(variantsArr.optString(i, "[]"));
 
-                    List<String> fotos = new ArrayList<>();
-                    String texto = "";
-                    List<String> variantes = new ArrayList<>();
-
-                    if (linksData.containsKey(name)) {
-                        Map<String, String> moveData = linksData.get(name);
-                        String fotosString = moveData.getOrDefault("Foto!", "[]");
-                        if (fotosString.startsWith("[") && fotosString.endsWith("]")) {
-                            String cleaned = fotosString.substring(1, fotosString.length() - 1);
-                            if (!cleaned.isEmpty()) {
-                                fotos = new ArrayList<>(Arrays.asList(cleaned.split(",")));
-                            }
-                        }
-                        String textoString = moveData.getOrDefault("Text!", "");
-                        if (textoString != null) {
-                            texto = textoString;
-                        }
-                        String variantesString = moveData.getOrDefault("Variantes!", "[]");
-                        if (variantesString.startsWith("[") && variantesString.endsWith("]")) {
-                            String cleaned = variantesString.substring(1, variantesString.length() - 1);
-                            if (!cleaned.isEmpty()) {
-                                variantes = new ArrayList<>(Arrays.asList(cleaned.split(",")));
-                            }
-                        }
-                    }
-                    tempMovesMap.put(name, new Movimento(name, type, dificuldadesList, fotos, texto, variantes));
+                    tempMovesMap.put(name, new Movimento(name, type, diffs, fotos, texto, variantes));
                 }
 
                 List<Movimento> sortedMoves = new ArrayList<>(tempMovesMap.values());
                 sortedMoves.sort(Comparator.comparingInt(Movimento::getTipo).reversed()
                         .thenComparing(Comparator.comparingDouble(Movimento::getMediaDificuldade).reversed()));
 
-                for (int j = 3; j < movesValues.length(); j++) {
+                for (int j = 7; j < movesValues.length(); j++) {
                     JSONArray personValues = movesValues.getJSONArray(j);
+                    if (personValues.length() == 0) continue;
+
                     String personName = personValues.getString(0);
                     if (personName.isEmpty()) continue;
 
@@ -493,39 +544,23 @@ public class TabelaFragment extends Fragment {
                     for (int i = 1; i < moveNamesArr.length(); i++) {
                         String moveName = moveNamesArr.getString(i);
                         if (personValues.length() > i) {
-                            int status = personValues.getInt(i);
+                            int status = personValues.optInt(i, 0);
                             person.getMoveStatus().put(moveName, status);
                         }
                     }
                     importedPeople.add(person);
                 }
 
-                List<Pessoa> currentPeople = circoViewModel.getMasterList().getValue();
-                List<Movimento> currentMoves = circoViewModel.getMoveList().getValue();
-
-                if (!isDataEqual(currentPeople, importedPeople) || !isMovesEqual(currentMoves, sortedMoves)) {
-                    handler.post(() -> {
-                        if (isAdded()) {
-                            circoViewModel.setMoveList(sortedMoves);
-                            circoViewModel.importMasterList(importedPeople);
-                            lastRemoteSyncTime = System.currentTimeMillis();
-                        }
-                    });
-                } else {
-                    lastRemoteSyncTime = System.currentTimeMillis();
-                    Log.d(TAG, "Dados remotos e locais são idênticos. Nenhuma atualização.");
-                }
-            } catch (Throwable t) {
-                Log.e(TAG, "Erro ao ler a planilha", t);
                 handler.post(() -> {
                     if (isAdded()) {
-                        Toast.makeText(context, "Erro ao sincronizar: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                        circoViewModel.setMoveList(sortedMoves);
+                        circoViewModel.importMasterList(importedPeople);
+                        lastRemoteSyncTime = System.currentTimeMillis();
                     }
                 });
-            } finally {
-                if (urlConnection != null) {
-                    urlConnection.disconnect();
-                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Erro na leitura", e);
             }
         });
     }
@@ -551,39 +586,44 @@ public class TabelaFragment extends Fragment {
         List<List<Object>> dataToWrite = new ArrayList<>();
         List<Pessoa> personList = circoViewModel.getMasterList().getValue();
         List<Movimento> moveList = circoViewModel.getMoveList().getValue();
-        if (personList == null || moveList == null || moveList.isEmpty()) {
-            return dataToWrite;
+
+        if (moveList == null || moveList.isEmpty()) return dataToWrite;
+
+        List<Object> rowNames = new ArrayList<>(); rowNames.add("Movimento");
+        List<Object> rowTypes = new ArrayList<>(); rowTypes.add("Tipo!");
+        List<Object> rowDiffs = new ArrayList<>(); rowDiffs.add("Dificuldade!");
+        List<Object> rowPhotos = new ArrayList<>(); rowPhotos.add("Foto!");
+        List<Object> rowVideos = new ArrayList<>(); rowVideos.add("Video!");
+        List<Object> rowTexts = new ArrayList<>(); rowTexts.add("Text!");
+        List<Object> rowVars = new ArrayList<>(); rowVars.add("Variantes!");
+
+        for (Movimento m : moveList) {
+            rowNames.add(m.getNome());
+            rowTypes.add(m.getTipo());
+            rowDiffs.add(m.getDificuldades().toString());
+            rowPhotos.add(m.getFotos().toString());
+            rowVideos.add("");
+            rowTexts.add(m.getTexto());
+            rowVars.add(m.getVariantes().toString());
         }
 
-        List<Object> moveNamesRow = new ArrayList<>();
-        moveNamesRow.add("Movimento");
-        for (Movimento move : moveList) {
-            moveNamesRow.add(move.getNome());
-        }
-        dataToWrite.add(moveNamesRow);
+        dataToWrite.add(rowNames);
+        dataToWrite.add(rowTypes);
+        dataToWrite.add(rowDiffs);
+        dataToWrite.add(rowPhotos);
+        dataToWrite.add(rowVideos);
+        dataToWrite.add(rowTexts);
+        dataToWrite.add(rowVars);
 
-        List<Object> typesRow = new ArrayList<>();
-        typesRow.add("Tipo!");
-        for (Movimento move : moveList) {
-            typesRow.add(move.getTipo());
-        }
-        dataToWrite.add(typesRow);
-
-        List<Object> difficultiesRow = new ArrayList<>();
-        difficultiesRow.add("Dificuldade!");
-        for (Movimento move : moveList) {
-            difficultiesRow.add(move.getDificuldades().toString());
-        }
-        dataToWrite.add(difficultiesRow);
-
-        for (Pessoa person : personList) {
-            List<Object> personRow = new ArrayList<>();
-            personRow.add(person.getNome());
-            for (Movimento move : moveList) {
-                int status = person.getMoveStatus().getOrDefault(move.getNome(), 0);
-                personRow.add(status);
+        if (personList != null) {
+            for (Pessoa person : personList) {
+                List<Object> personRow = new ArrayList<>();
+                personRow.add(person.getNome());
+                for (Movimento m : moveList) {
+                    personRow.add(person.getMoveStatus().getOrDefault(m.getNome(), 0));
+                }
+                dataToWrite.add(personRow);
             }
-            dataToWrite.add(personRow);
         }
         return dataToWrite;
     }
@@ -714,4 +754,55 @@ public class TabelaFragment extends Fragment {
         }
         return true;
     }
+
+    private List<Integer> parseListInteger(String input) {
+        List<Integer> result = new ArrayList<>();
+        if (input == null || input.equals("[]") || input.isEmpty()) return result;
+
+        String cleaned = input.replace("[", "").replace("]", "").trim();
+        if (cleaned.isEmpty()) return result;
+
+        String[] parts = cleaned.split(",");
+        for (String p : parts) {
+            try {
+                result.add(Integer.parseInt(p.trim()));
+            } catch (NumberFormatException ignored) {}
+        }
+        return result;
+    }
+
+    private List<String> parseListString(String input) {
+        List<String> result = new ArrayList<>();
+        if (input == null || input.equals("[]") || input.isEmpty()) return result;
+
+        String cleaned = input.replace("[", "").replace("]", "").trim();
+        if (cleaned.isEmpty()) return result;
+
+        String[] parts = cleaned.split(",");
+        for (String p : parts) {
+            result.add(p.trim());
+        }
+        return result;
+    }
+
+    private void appendSection(SpannableStringBuilder ssb, String title, String content) {
+        int start = ssb.length();
+        ssb.append(title);
+        ssb.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, ssb.length(), Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+        ssb.setSpan(new android.text.style.RelativeSizeSpan(1.1f), start, ssb.length(), Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+        ssb.append(content);
+    }
+
+    private void appendStatus(SpannableStringBuilder ssb, String label, String description) {
+        appendStatus(ssb, label, description, Color.DKGRAY);
+    }
+
+    private void appendStatus(SpannableStringBuilder ssb, String label, String description, int color) {
+        int start = ssb.length();
+        ssb.append(label);
+        ssb.setSpan(new android.text.style.ForegroundColorSpan(color), start, ssb.length(), Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+        ssb.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, ssb.length(), Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+        ssb.append(description);
+    }
 }
+
