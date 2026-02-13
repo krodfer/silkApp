@@ -328,10 +328,16 @@ public class TabelaFragment extends Fragment {
                 updateCellAppearance(cell, status);
 
                 cell.setOnClickListener(v -> {
+                    lastLocalModificationTime = System.currentTimeMillis();
+                    int currentStatus = pessoa.getMoveStatus().getOrDefault(move.getNome(), 0);
+                    int nextStatus = (currentStatus + 1) > 3 ? 0 : currentStatus + 1;
+                    
+                    updateCellAppearance(cell, nextStatus);
                     circoViewModel.cycleMoveStatus(pessoa.getId(), move.getNome());
                 });
 
                 cell.setOnLongClickListener(v -> {
+                    lastLocalModificationTime = System.currentTimeMillis();
                     showStatusMenu(v, pessoa.getId(), move.getNome());
                     return true;
                 });
@@ -474,6 +480,11 @@ public class TabelaFragment extends Fragment {
         if (isSyncing || !isOnline()) {
             return;
         }
+
+        if (lastLocalModificationTime > lastRemoteSyncTime) {
+            Log.d(TAG, "Priorizando envio de dados locais.");
+        }
+
         isSyncing = true;
         executor.execute(() -> {
             try {
@@ -502,6 +513,13 @@ public class TabelaFragment extends Fragment {
         if (context == null) {
             return;
         }
+
+        long timeSinceLastEdit = System.currentTimeMillis() - lastLocalModificationTime;
+        if (timeSinceLastEdit < 10000) {
+            Log.d(TAG, "Leitura ignorada: Usuário editou recentemente (" + timeSinceLastEdit + "ms atrás).");
+            return;
+        }
+
         executor.execute(() -> {
             HttpURLConnection urlConnection = null;
             try {
@@ -558,8 +576,22 @@ public class TabelaFragment extends Fragment {
 
                 handler.post(() -> {
                     if (isAdded()) {
-                        circoViewModel.setMoveList(sortedMoves);
-                        circoViewModel.importMasterList(importedPeople);
+                        if (System.currentTimeMillis() - lastLocalModificationTime < 10000) {
+                            return;
+                        }
+                        List<Pessoa> currentList = circoViewModel.getMasterList().getValue();
+                        List<Movimento> currentMoves = circoViewModel.getMoveList().getValue();
+
+                        boolean pessoasIguais = isDataEqual(currentList, importedPeople);
+                        boolean movimentosIguais = isMovesEqual(currentMoves, sortedMoves);
+
+                        if (!pessoasIguais || !movimentosIguais) {
+                            Log.d(TAG, "Dados novos detectados. Atualizando tabela.");
+                            circoViewModel.setMoveList(sortedMoves);
+                            circoViewModel.importMasterList(importedPeople);
+                        } else {
+                            Log.d(TAG, "Dados idênticos. Nenhuma atualização de tela necessária.");
+                        }
                         lastRemoteSyncTime = System.currentTimeMillis();
                     }
                 });
