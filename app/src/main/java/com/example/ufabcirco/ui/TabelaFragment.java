@@ -86,10 +86,11 @@ public class TabelaFragment extends Fragment {
     private LinearLayout fixedMoveListContainer;
     private LinearLayout headerNamesContainer;
     private HorizontalScrollView mainHorizontalScrollView;
+    private HorizontalScrollView headerNamesScrollView;
     private ScrollView fixedMoveColumnScrollView;
     private ScrollView mainTableScrollView;
     private FloatingActionButton fabExport, fabImport;
-    private HorizontalScrollView headerNamesScrollView;
+
     private LinearLayout difficultyColumnContainer;
     private LinearLayout dataColumnsContainer;
     private ProgressBar progressBar;
@@ -99,8 +100,10 @@ public class TabelaFragment extends Fragment {
     private Context context;
 
     private boolean isSyncing = false;
+    private boolean skipTableRebuild = false;
     private long lastLocalModificationTime = 0;
     private long lastRemoteSyncTime = 0;
+
     private final int SYNC_INTERVAL_MS = 3000;
     private final long SYNC_DEBOUNCE_MS = 1000;
 
@@ -157,6 +160,12 @@ public class TabelaFragment extends Fragment {
         circoViewModel.getMasterList().observe(getViewLifecycleOwner(), pessoas -> {
             currentPessoaList = pessoas;
             updateHeaders(pessoas);
+
+            if (skipTableRebuild) {
+                skipTableRebuild = false;
+                return;
+            }
+
             updateTable(currentPessoaList, currentMoveList);
         });
 
@@ -330,15 +339,25 @@ public class TabelaFragment extends Fragment {
                 cell.setOnClickListener(v -> {
                     lastLocalModificationTime = System.currentTimeMillis();
                     int currentStatus = pessoa.getMoveStatus().getOrDefault(move.getNome(), 0);
-                    int nextStatus = (currentStatus + 1) > 3 ? 0 : currentStatus + 1;
-                    
+                    int nextStatus;
+                    if (currentStatus >= 3){
+                        nextStatus = 0;
+                    } else {
+                        nextStatus = currentStatus + 1;
+                    }
+
                     updateCellAppearance(cell, nextStatus);
-                    circoViewModel.cycleMoveStatus(pessoa.getId(), move.getNome());
+                    pessoa.getMoveStatus().put(move.getNome(), nextStatus);
+                    skipTableRebuild = true;
+
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        circoViewModel.setMoveStatus(pessoa.getId(), move.getNome(), nextStatus);
+                    });
                 });
 
                 cell.setOnLongClickListener(v -> {
                     lastLocalModificationTime = System.currentTimeMillis();
-                    showStatusMenu(v, pessoa.getId(), move.getNome());
+                    showStatusMenu((TextView) v, pessoa, move.getNome());
                     return true;
                 });
 
@@ -363,7 +382,7 @@ public class TabelaFragment extends Fragment {
         cell.setBackground(cellBackground);
     }
 
-    private void showStatusMenu(View view, String pessoaId, String moveName) {
+    private void showStatusMenu(TextView cell, Pessoa pessoa, String moveName) {
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View popupView = inflater.inflate(R.layout.custom_status_menu, null);
 
@@ -373,31 +392,40 @@ public class TabelaFragment extends Fragment {
                 ViewGroup.LayoutParams.WRAP_CONTENT
         );
 
-        popupView.findViewById(R.id.btn_white).setOnClickListener(v -> {
-            circoViewModel.setMoveStatus(pessoaId, moveName, 0);
-            popupWindow.dismiss();
-        });
+        View.OnClickListener menuAction = v -> {
+            int novoStatus = 0;
 
-        popupView.findViewById(R.id.btn_yellow).setOnClickListener(v -> {
-            circoViewModel.setMoveStatus(pessoaId, moveName, 1);
-            popupWindow.dismiss();
-        });
+            int id = v.getId();
+            if (id == R.id.btn_white) novoStatus = 0;
+            else if (id == R.id.btn_yellow) novoStatus = 1;
+            else if (id == R.id.btn_blue) novoStatus = 2;
+            else if (id == R.id.btn_red) novoStatus = 3;
 
-        popupView.findViewById(R.id.btn_blue).setOnClickListener(v -> {
-            circoViewModel.setMoveStatus(pessoaId, moveName, 2);
-            popupWindow.dismiss();
-        });
+            updateCellAppearance(cell, novoStatus);
 
-        popupView.findViewById(R.id.btn_red).setOnClickListener(v -> {
-            circoViewModel.setMoveStatus(pessoaId, moveName, 3);
+            pessoa.getMoveStatus().put(moveName, novoStatus);
+
+            skipTableRebuild = true;
+            lastLocalModificationTime = System.currentTimeMillis();
+
+            int finalStatus = novoStatus;
+            new Handler(Looper.getMainLooper()).post(() -> {
+                circoViewModel.setMoveStatus(pessoa.getId(), moveName, finalStatus);
+            });
+
             popupWindow.dismiss();
-        });
+        };
+
+        popupView.findViewById(R.id.btn_white).setOnClickListener(menuAction);
+        popupView.findViewById(R.id.btn_yellow).setOnClickListener(menuAction);
+        popupView.findViewById(R.id.btn_blue).setOnClickListener(menuAction);
+        popupView.findViewById(R.id.btn_red).setOnClickListener(menuAction);
 
         popupWindow.setOutsideTouchable(true);
         popupWindow.setFocusable(true);
         popupWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
 
-        popupWindow.showAsDropDown(view, -35, -view.getHeight() - 5);
+        popupWindow.showAsDropDown(cell, -35, -cell.getHeight() - 5);
     }
 
     private void showAddMovimentoDialog() {

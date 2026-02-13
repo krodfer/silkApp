@@ -63,8 +63,8 @@ public class CircoViewModel extends ViewModel {
         instructorNames.addAll(Arrays.asList(
                 "Kaique Ferreira", "Sandy Netto", "Lucas Mendes", "Karin Yanagi",
                 "Amanda Andrade", "Yasmin Batista", "Gabriel Ross", "Gabs Ross", "Fernando Militani",
-                "Dany Serrano", "Catarina Movio", "Gabriel Sgarbi", "M. Julio", "Giovanna Geloneze",
-                "Carla Gomes", "Sagai Yami", "Bibi Souza"
+                "Dany Serrano", "Catarina Movio", "Gabriel Sgarbi", "Lais Crespo", "Giovanna Geloneze",
+                "Carla Gomes", "Sagai Yami", "Bibi Souza", "Simone Anjinho"
         ));
 
         List<Pessoa> initialQueue = new ArrayList<>();
