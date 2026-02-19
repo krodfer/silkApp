@@ -3,5 +3,24 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="24dp"
+    android:background="#f7ece0">
+    <TextView
+        android:id="@+id/dialog_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#56114b"
+        android:textSize="24sp"
+        android:gravity="center"
+        android:fontFamily="@font/pacifico" />
+    <EditText
+        android:id="@+id/edit_text_nome_pessoa"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Digite o nome ou parte do nome"
+        android:textColor="#56114b"
+        android:textColorHint="#9956114b"
+        android:backgroundTint="#56114b"
+        android:inputType="textCapWords" />
+
 </LinearLayout>

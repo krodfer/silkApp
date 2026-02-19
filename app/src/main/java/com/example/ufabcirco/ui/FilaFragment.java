@@ -1,8 +1,7 @@
 package com.example.ufabcirco.ui;
 
-import android.app.AlertDialog;
+import androidx.appcompat.app.AlertDialog;
 import android.os.Bundle;
-import android.text.InputType;
 import android.util.Log;
 
 import android.view.LayoutInflater;
@@ -27,11 +26,7 @@ import com.example.ufabcirco.model.Pessoa;
 import com.example.ufabcirco.viewmodel.CircoViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.ArrayList;
 
 public class FilaFragment extends Fragment {
 
@@ -165,41 +160,6 @@ public class FilaFragment extends Fragment {
         }
     }
 
-    private String formatMoveStatusForDialog(Map<String, Integer> moveStatus) {
-        if (moveStatus == null || moveStatus.isEmpty()) {
-            return "Nenhum movimento registrado.";
-        }
-        StringBuilder sb = new StringBuilder();
-        int relevantMovesCount = 0;
-
-        List<Map.Entry<String, Integer>> sortedMoves = new ArrayList<>(moveStatus.entrySet());
-        Collections.sort(sortedMoves, Comparator.comparing(Map.Entry::getKey));
-
-        for (Map.Entry<String, Integer> entry : sortedMoves) {
-            String statusText = "";
-            int statusValue = entry.getValue() != null ? entry.getValue() : 0;
-
-            switch (statusValue) {
-                case 1: statusText = " (Já fez)"; break;
-                case 2: statusText = " (Aprendeu)"; break;
-                case 3: statusText = " (Não sabe)"; break;
-            }
-
-            if (statusValue != 0) {
-                if (relevantMovesCount == 0) {
-                    sb.append("Movimentos:\n");
-                }
-                sb.append("- ").append(entry.getKey()).append(statusText).append("\n");
-                relevantMovesCount++;
-            }
-        }
-
-        if (relevantMovesCount == 0) {
-            return "Nenhum movimento com status relevante.";
-        }
-        return sb.toString().trim();
-    }
-
     private void updateUI(List<Pessoa> pessoas) {
         if (pessoas == null || pessoas.isEmpty()) {
             Log.d(TAG, "updateUI: A fila está vazia. ESCONDENDO o RecyclerView.");
@@ -214,60 +174,53 @@ public class FilaFragment extends Fragment {
     }
 
     private void showAddPersonDialog() {
-        if(getContext() == null) {
+        if (getContext() == null){
             return;
         }
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("Adicionar Pessoa à Fila");
 
-        final EditText input = new EditText(requireContext());
-        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
-        input.setHint("Digite o nome ou parte do nome");
-        builder.setView(input);
+        AlertDialog.Builder builder = CircoDialogBuilder.create(requireContext(), "Adicionar pessoa à fila");
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_add_pessoa, null);
+        final EditText input = dialogView.findViewById(R.id.edit_text_nome_pessoa);
 
-        builder.setPositiveButton("Buscar", (dialog, which) -> {
+        builder.setView(dialogView);
+        builder.setPositiveButton("Adicionar", (dialog, which) -> {
             String partialName = input.getText().toString().trim();
-            if (partialName.isEmpty()) {
-                Toast.makeText(getContext(), "O nome não pode ser vazio.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            List<Pessoa> matches = circoViewModel.findPeopleInMasterList(partialName);
-
-            if (matches.isEmpty()) {
-                showCreateNewPersonDialog(partialName);
-            } else if (matches.size() == 1) {
-                addPersonToQueue(matches.get(0));
-            } else {
-                showMultipleMatchesDialog(matches);
+            if (!partialName.isEmpty()) {
+                List<Pessoa> matches = circoViewModel.findPeopleInMasterList(partialName);
+                if (matches.isEmpty()) {
+                    showCreateNewPersonDialog(partialName);
+                } else if (matches.size() == 1) {
+                    addPersonToQueue(matches.get(0));
+                } else {
+                    showMultipleMatchesDialog(matches);
+                }
             }
         });
-        builder.setNegativeButton("Cancelar", (dialog, which) -> dialog.cancel());
-        builder.show();
+
+        builder.setNegativeButton("Cancelar", null);
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+        CircoDialogBuilder.fixColors(dialog);
     }
 
-    private void showCreateNewPersonDialog(String name) {
+    private void showCreateNewPersonDialog(String partialName) {
         if (getContext() == null) {
             return;
         }
-        new AlertDialog.Builder(getContext())
-                .setTitle("Pessoa não encontrada")
-                .setMessage("Ninguém encontrado com o nome '"+ name +"'. Deseja criar e adicionar uma nova pessoa à fila?")
-                .setPositiveButton("Sim", (d, w) -> {
-                    String result = circoViewModel.createNewPersonAndAddToQueue(name);
-                    if (getContext() == null) {
-                        return;
-                    }
-                    if ("SUCCESS".equals(result)) {
-                        Toast.makeText(getContext(), name + " foi criado(a) e adicionado(a) à fila.", Toast.LENGTH_LONG).show();
-                    } else if ("DUPLICATE_MASTER".equals(result)) {
-                        Toast.makeText(getContext(), name + " já existe na tabela. Use a busca para adicioná-lo(a).", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(getContext(), "Não foi possível adicionar a pessoa.", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("Não", null)
-                .show();
+
+        AlertDialog.Builder builder = CircoDialogBuilder.create(requireContext(), "Pessoa não encontrada");
+        builder.setMessage("Deseja criar um novo cadastro para '" + partialName + "'?");
+
+        builder.setPositiveButton("Sim, Criar", (dialog, which) -> {
+            circoViewModel.createNewPersonAndAddToQueue(partialName);
+        });
+
+        builder.setNegativeButton("Não", null);
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+        CircoDialogBuilder.fixColors(dialog);
     }
 
     private void showMultipleMatchesDialog(List<Pessoa> matches) {

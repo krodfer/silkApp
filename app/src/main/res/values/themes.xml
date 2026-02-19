@@ -1,10 +1,26 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.UFABCirco" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Base.Theme.UFABCirco" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="alertDialogTheme">@style/CustomAlertDialog</item>
+        <item name="materialAlertDialogTheme">@style/CustomAlertDialog</item>
 
-    <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorSurface">#f7ece0</item>
+        <item name="android:textColorPrimary">#56114b</item>
     </style>
 
     <style name="Theme.UFABCirco" parent="Base.Theme.UFABCirco" />
+
+    <style name="CustomAlertDialog" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="colorSurface">#f7ece0</item>
+    </style>
+
+    <style name="AlertDialogTitleStyle">
+        <item name="android:textColor">#56114b</item>
+        <item name="android:fontFamily">@font/pacifico</item>
+        <item name="android:textSize">24sp</item>
+    </style>
+
+    <style name="AlertDialogButtonStyle" parent="Widget.AppCompat.Button.ButtonBar.AlertDialog">
+        <item name="android:textColor">#56114b</item>
+    </style>
 </resources>
