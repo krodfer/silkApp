@@ -1,6 +1,10 @@
 package com.example.ufabcirco;
 
 import android.os.Bundle;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.TextView;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.viewpager2.widget.ViewPager2;
 import com.example.ufabcirco.adapter.SectionsPagerAdapter;
@@ -30,9 +34,18 @@ public class MainActivity extends AppCompatActivity {
                 R.drawable.ic_galeria
         };
 
+        String[] titulos = {"Fila", "Tabela", "Galeria"};
+
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
-            tab.setText(sectionsPagerAdapter.getPageTitle(position));
-            tab.setIcon(tabIcons[position]);
+            View customView = getLayoutInflater().inflate(R.layout.item_aba_custom, null);
+
+            TextView tv = customView.findViewById(R.id.tab_text);
+            tv.setText(titulos[position]);
+
+            ImageView img = customView.findViewById(R.id.tab_icon);
+            img.setImageResource(tabIcons[position]);
+
+            tab.setCustomView(customView);
         }).attach();
     }
 }
