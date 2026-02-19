@@ -2,18 +2,23 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="16dp">
+    android:background="#f7ece0"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="#f7ece0">
 
         <EditText
             android:id="@+id/edit_nome_movimento"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Nome do Movimento"
+            android:textColor="#56114b"
+            android:textColorHint="#8E6B88"
             android:fontFamily="@font/quicksand" />
 
         <TextView
@@ -21,6 +26,7 @@
             android:layout_height="wrap_content"
             android:text="Tipo de Movimento"
             android:layout_marginTop="8dp"
+            android:textColor="#56114b"
             android:fontFamily="@font/quicksand"
             android:textStyle="bold" />
 
@@ -28,6 +34,7 @@
             android:id="@+id/spinner_tipo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:backgroundTint="#56114b"
             android:entries="@array/tipos_movimento" />
 
         <TextView
@@ -35,6 +42,7 @@
             android:layout_height="wrap_content"
             android:text="Dificuldade"
             android:layout_marginTop="8dp"
+            android:textColor="#56114b"
             android:fontFamily="@font/quicksand" />
 
         <RatingBar
@@ -42,7 +50,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:numStars="5"
-            android:stepSize="1.0" />
+            android:stepSize="1.0"
+            android:progressTint="#56114b"
+            android:secondaryProgressTint="#8E6B88" />
 
         <EditText
             android:id="@+id/edit_descricao"
@@ -50,12 +60,16 @@
             android:layout_height="wrap_content"
             android:hint="Descrição"
             android:inputType="textMultiLine"
+            android:textColor="#56114b"
+            android:textColorHint="#8E6B88"
             android:fontFamily="@font/quicksand" />
 
         <EditText
             android:id="@+id/edit_variantes"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:textColor="#56114b"
+            android:textColorHint="#8E6B88"
             android:hint="Outros nomes (separados por vírgula)"
             android:fontFamily="@font/quicksand" />
     </LinearLayout>

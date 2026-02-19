@@ -1,104 +1,147 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_profile_menu"
     android:padding="16dp">
 
-    <TextView
-        android:id="@+id/text_view_movimento_title"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:id="@+id/title_group"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="-300dp"
-        android:layout_marginTop="20dp"
-        android:fontFamily="@font/pacifico"
-        android:gravity="center"
         android:textColor="@android:color/black"
         android:textSize="34sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:text="Nome do movimento" />
-
-    <TextView
-        android:id="@+id/text_view_movimento_tipo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="-300dp"
-        android:layout_marginTop="0dp"
-        android:fontFamily="@font/quicksand"
         android:gravity="center"
-        android:textColor="@android:color/black"
-        android:textSize="18sp"
-        android:textStyle="bold"
+        android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/text_view_movimento_title"
-        tools:text="Tipo" />
+        app:layout_constraintTop_toTopOf="parent"
 
-    <TextView
-        android:id="@+id/text_view_movimento_variantes"
+        android:layout_marginStart="48dp"
+        android:layout_marginEnd="48dp"
+        android:fontFamily="@font/pacifico"
+        android:translationX="-160dp"
+        android:translationY="28dp" >
+
+        <TextView
+            android:id="@+id/text_view_movimento_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/pacifico"
+            android:textColor="@android:color/black"
+            android:textSize="32sp"
+            android:text="Nome do Movimento" />
+
+        <TextView
+            android:id="@+id/text_view_movimento_tipo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/quicksand"
+            android:textColor="#56114b"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:text="Subida" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/difficulty_group"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        android:fontFamily="@font/quicksand"
-        android:gravity="end"
-        android:textSize="14sp"
-        android:textStyle="italic"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        tools:text="Variantes" />
+        android:layout_marginEnd="100dp"
+        android:layout_marginTop="2dp">
 
-    <ImageView
-        android:id="@+id/image_view_movimento"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:scaleType="fitCenter"
-        android:adjustViewBounds="true"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/text_view_movimento_tipo"
-        app:layout_constraintEnd_toStartOf="@+id/text_view_movimento_text_container"
-        android:layout_marginStart="80dp"
-        android:layout_marginEnd="30dp"
-        tools:src="@tools:sample/backgrounds/scenic" />
+        <RatingBar
+            android:id="@+id/rating_bar_difficulty"
+            style="?android:attr/ratingBarStyleIndicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:isIndicator="true"
+            android:numStars="5"
+            android:stepSize="0.1"
+            android:scaleX="0.8"
+            android:scaleY="0.8"
+            android:progressTint="#56114b"
+            android:secondaryProgressTint="#56114b"
+            android:progressBackgroundTint="#f6ebdf"/>
 
-    <ScrollView
-        android:id="@+id/text_view_movimento_text_container"
+        <TextView
+            android:id="@+id/text_view_difficulty_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#56114b"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginTop="100dp"
+        android:orientation="horizontal"
+        android:weightSum="2"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/image_view_movimento"
-        app:layout_constraintTop_toBottomOf="@+id/text_view_movimento_variantes"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="30dp"
-        android:paddingTop="150dp"
-        android:paddingBottom="50dp"
-        android:paddingEnd="16dp">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1">
+
+            <ImageView
+                android:id="@+id/image_view_detail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:padding="50dp"
+                android:scaleType="fitCenter" />
+
+            <ProgressBar
+                android:id="@+id/progress_bar_loading"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:indeterminateTint="#56114b" />
+        </FrameLayout>
 
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
             android:orientation="vertical"
-            android:paddingBottom="100dp">
-            <TextView
-                android:id="@+id/text_view_movimento_text"
+            android:paddingStart="12dp">
+
+            <LinearLayout
+                android:id="@+id/section_buttons_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/quicksand"
-                android:gravity="start"
-                android:textSize="16sp"
-                tools:text="Textinho" />
+                android:gravity="center"
+                android:layout_marginEnd="50dp"
+                android:orientation="horizontal" />
 
-                <View
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="40dp"
+                android:clipToPadding="false">
+
+                <TextView
+                    android:id="@+id/text_view_content"
                     android:layout_width="match_parent"
-                    android:layout_height="100dp" />
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="60dp"
+                    android:fontFamily="@font/quicksand"
+                    android:textColor="#333333"
+                    android:textSize="17sp" />
+            </ScrollView>
         </LinearLayout>
-    </ScrollView>
+    </LinearLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

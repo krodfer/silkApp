@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.Typeface;
 
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -28,6 +29,7 @@ import android.widget.Toast;
 import android.widget.Spinner;
 import android.widget.RatingBar;
 import android.widget.EditText;
+import android.widget.ArrayAdapter;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -433,10 +435,15 @@ public class TabelaFragment extends Fragment {
 
         TextView title = new TextView(context);
         title.setText("Novo Movimento");
-        title.setPadding(0, 40, 0, 0);
+        title.setPadding(0, 48, 0, 24);
         title.setGravity(Gravity.CENTER);
         title.setTextSize(24);
-        title.setTypeface(ResourcesCompat.getFont(context, R.font.pacifico));
+        title.setTextColor(Color.parseColor("#56114b"));
+        try {
+            title.setTypeface(ResourcesCompat.getFont(context, R.font.pacifico));
+        } catch (Exception e) {
+            title.setTypeface(null, Typeface.BOLD);
+        }
         builder.setCustomTitle(title);
 
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_add_movimento, null);
@@ -448,22 +455,45 @@ public class TabelaFragment extends Fragment {
         EditText editDescricao = dialogView.findViewById(R.id.edit_descricao);
         EditText editVariantes = dialogView.findViewById(R.id.edit_variantes);
 
+        String[] tipos = context.getResources().getStringArray(R.array.tipos_movimento);
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                context,
+                R.layout.spinner_add_move,
+                tipos
+        );
+
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerTipo.setAdapter(adapter);
+
         builder.setPositiveButton("Adicionar", (dialog, which) -> {
             String nome = editNome.getText().toString();
             int tipo = spinnerTipo.getSelectedItemPosition();
             int dificuldade = (int) ratingDificuldade.getRating();
             String descricao = editDescricao.getText().toString();
-            List<String> variantes = Arrays.asList(editVariantes.getText().toString().split(","));
 
-            Movimento novo = new Movimento(nome, tipo, new ArrayList<>(Collections.singletonList(dificuldade)),
+            String variantesStr = editVariantes.getText().toString();
+            List<String> variantes = Arrays.asList(variantesStr.split("\\s*,\\s*"));
+
+            Movimento novo = new Movimento(nome, tipo,
+                    new ArrayList<>(Collections.singletonList(dificuldade)),
                     new ArrayList<>(), descricao, variantes);
 
             circoViewModel.addMovimento(novo);
-            Toast.makeText(context, "Movimento adicionado! Sincronizando...", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Movimento adicionado!", Toast.LENGTH_SHORT).show();
         });
 
         builder.setNegativeButton("Cancelar", null);
-        builder.show();
+        AlertDialog dialog = builder.create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.parseColor("#f7ece0")));
+        }
+
+        dialog.show();
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.parseColor("#56114b"));
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.parseColor("#56114b"));
     }
 
     private void showStarRatingMenu(View view, String moveName) {
