@@ -23,8 +23,10 @@
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:padding="8dp"
-                android:text="Movimento"
-                android:textStyle="bold" />
+                android:text="Movimentos"
+                android:background="@android:color/white"
+                android:textStyle="bold"
+                android:textColor="@color/black" />
 
             <HorizontalScrollView
                 android:id="@+id/header_names_scroll_view"
