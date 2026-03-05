@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Silk</string>
+    <string name="app_name">Aerial</string>
     <string-array name="tipos_movimento">
         <item>Subida</item>
         <item>Trava</item>

@@ -15,12 +15,12 @@ public class CircoDialogBuilder {
 
         TextView title = new TextView(context);
         title.setText(titleText);
-        title.setPadding(0, 54, 0, 20);
+        title.setPadding(0, 54, 0, 0);
         title.setGravity(Gravity.CENTER);
         title.setTextSize(24);
         title.setTextColor(Color.parseColor("#56114b"));
 
-        try {
+        try {powe
             Typeface pacifico = ResourcesCompat.getFont(context, R.font.pacifico);
             title.setTypeface(pacifico);
         } catch (Exception e) {
