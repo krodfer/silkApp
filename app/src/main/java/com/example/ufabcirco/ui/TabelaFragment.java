@@ -109,6 +109,8 @@ public class TabelaFragment extends Fragment {
     private final int SYNC_INTERVAL_MS = 3000;
     private final long SYNC_DEBOUNCE_MS = 1000;
 
+    private List<String> instructorNames = new ArrayList<>();
+
     private final Runnable syncRunnable = new Runnable() {
         @Override
         public void run() {
@@ -595,8 +597,16 @@ public class TabelaFragment extends Fragment {
                 JSONArray typesArr = (movesValues.length() > 1) ? movesValues.getJSONArray(1) : new JSONArray();
                 JSONArray difficultiesArr = (movesValues.length() > 2) ? movesValues.getJSONArray(2) : new JSONArray();
                 JSONArray photosArr = (movesValues.length() > 3) ? movesValues.getJSONArray(3) : new JSONArray();
-                JSONArray textsArr = (movesValues.length() > 5) ? movesValues.getJSONArray(5) : new JSONArray();
-                JSONArray variantsArr = (movesValues.length() > 6) ? movesValues.getJSONArray(6) : new JSONArray();
+                JSONArray infoArr = (movesValues.length() > 5) ? movesValues.getJSONArray(5) : new JSONArray();
+                JSONArray textsArr = (movesValues.length() > 6) ? movesValues.getJSONArray(6) : new JSONArray();
+                JSONArray variantsArr = (movesValues.length() > 7) ? movesValues.getJSONArray(7) : new JSONArray();
+
+                List<Object> infoList = new ArrayList<>();
+                for (int k = 0; k < infoArr.length(); k++) {
+                    infoList.add(infoArr.get(k));
+                }
+
+                circoViewModel.updateInstructors(infoList);
 
                 for (int i = 1; i < moveNamesArr.length(); i++) {
                     String name = moveNamesArr.getString(i);
@@ -614,7 +624,7 @@ public class TabelaFragment extends Fragment {
                 sortedMoves.sort(Comparator.comparingInt(Movimento::getTipo).reversed()
                         .thenComparing(Comparator.comparingDouble(Movimento::getMediaDificuldade).reversed()));
 
-                for (int j = 7; j < movesValues.length(); j++) {
+                for (int j = 8; j < movesValues.length(); j++) {
                     JSONArray personValues = movesValues.getJSONArray(j);
                     if (personValues.length() == 0) continue;
 
@@ -688,9 +698,12 @@ public class TabelaFragment extends Fragment {
         List<Object> rowTypes = new ArrayList<>(); rowTypes.add("Tipo!");
         List<Object> rowDiffs = new ArrayList<>(); rowDiffs.add("Dificuldade!");
         List<Object> rowPhotos = new ArrayList<>(); rowPhotos.add("Foto!");
+        List<Object> rowInfos = new ArrayList<>(); rowInfos.add("Info!");
         List<Object> rowVideos = new ArrayList<>(); rowVideos.add("Video!");
         List<Object> rowTexts = new ArrayList<>(); rowTexts.add("Text!");
         List<Object> rowVars = new ArrayList<>(); rowVars.add("Variantes!");
+
+        rowInfos.add("instrutores" + instructorNames.toString().replace(" ", ""));
 
         for (Movimento m : moveList) {
             rowNames.add(m.getNome());
@@ -707,6 +720,7 @@ public class TabelaFragment extends Fragment {
         dataToWrite.add(rowDiffs);
         dataToWrite.add(rowPhotos);
         dataToWrite.add(rowVideos);
+        dataToWrite.add(rowInfos);
         dataToWrite.add(rowTexts);
         dataToWrite.add(rowVars);
 
@@ -721,6 +735,21 @@ public class TabelaFragment extends Fragment {
             }
         }
         return dataToWrite;
+    }
+
+    public void setInstrutoresNames(List<Object> dados) {
+        for (Object item : dados) {
+            String texto = item.toString();
+
+            if (texto.contains("instrutores")) {
+                String nomesLimpos = texto.replace("instrutores[", "").replace("]", "").replace("\"", "");
+                String[] nomesArray = nomesLimpos.split(",");
+
+                for (String nome : nomesArray) {
+                    instructorNames.add(nome.trim());
+                }
+            }
+        }
     }
 
     private Sheets getSheetsService() throws Exception {

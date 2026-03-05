@@ -20,7 +20,7 @@ public class CircoDialogBuilder {
         title.setTextSize(24);
         title.setTextColor(Color.parseColor("#56114b"));
 
-        try {powe
+        try {
             Typeface pacifico = ResourcesCompat.getFont(context, R.font.pacifico);
             title.setTypeface(pacifico);
         } catch (Exception e) {

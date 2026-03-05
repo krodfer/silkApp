@@ -27,46 +27,61 @@ public class CircoViewModel extends ViewModel {
     private final Map<String, Pessoa> pessoaMap = new HashMap<>();
 
     private final MutableLiveData<List<Pessoa>> _masterList = new MutableLiveData<>(new ArrayList<>());
-    public LiveData<List<Pessoa>> getMasterList() { return _masterList; }
+    public LiveData<List<Pessoa>> getMasterList() {
+        return _masterList;
+    }
 
     private final MutableLiveData<List<Movimento>> _moveList = new MutableLiveData<>(new ArrayList<>());
-    public LiveData<List<Movimento>> getMoveList() { return _moveList; }
+    public LiveData<List<Movimento>> getMoveList() {
+        return _moveList;
+    }
 
     private final MutableLiveData<List<Pessoa>> _queueList = new MutableLiveData<>(new ArrayList<>());
-    public LiveData<List<Pessoa>> getQueueList() { return _queueList; }
+    public LiveData<List<Pessoa>> getQueueList() {
+        return _queueList;
+    }
 
     private final MutableLiveData<String> _selectedPessoaId = new MutableLiveData<>();
-    public LiveData<String> getSelectedPessoaId() { return _selectedPessoaId; }
+    public LiveData<String> getSelectedPessoaId() {
+        return _selectedPessoaId;
+    }
 
     private final MutableLiveData<Integer> _selectionColor = new MutableLiveData<>();
-    public LiveData<Integer> getSelectionColor() { return _selectionColor; }
+    public LiveData<Integer> getSelectionColor() {
+        return _selectionColor;
+    }
 
     private final MutableLiveData<Pessoa> _navigateToProfile = new MutableLiveData<>();
-    public LiveData<Pessoa> getNavigateToProfile() { return _navigateToProfile; }
+    public LiveData<Pessoa> getNavigateToProfile() {
+        return _navigateToProfile;
+    }
 
     private final MutableLiveData<Boolean> _localModificationEvent = new MutableLiveData<>();
-    public LiveData<Boolean> getLocalModificationEvent() { return _localModificationEvent; }
+    public LiveData<Boolean> getLocalModificationEvent() {
+        return _localModificationEvent;
+    }
+
+    private MutableLiveData<List<Object>> rowInfos = new MutableLiveData<>();
+    public LiveData<List<Object>> getRowInfos() {
+        return rowInfos;
+    }
 
     private final MutableLiveData<List<Post>> _allPosts = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<List<Post>> _filteredPosts = new MutableLiveData<>(new ArrayList<>());
-    public LiveData<List<Post>> getFilteredPosts() { return _filteredPosts; }
+    public LiveData<List<Post>> getFilteredPosts() {
+        return _filteredPosts;
+    }
 
     private final MutableLiveData<String> _galleryFilter = new MutableLiveData<>(null);
-    public LiveData<String> getGalleryFilter() { return _galleryFilter; }
+    public LiveData<String> getGalleryFilter() {
+        return _galleryFilter;
+    }
 
     private List<Post> shuffledPosts = new ArrayList<>();
     private int shuffledPostsIndex = 0;
 
     public CircoViewModel() {
         Log.d(TAG, "Construtor CircoViewModel chamado. Criando lista inicial.");
-
-        instructorNames.addAll(Arrays.asList(
-                "Kaique Ferreira", "Sandy Netto", "Lucas Mendes", "Karin Yanagi",
-                "Amanda Andrade", "Yasmin Batista", "Gabriel Ross", "Gabs Ross", "Fernando Militani",
-                "Dany Serrano", "Catarina Movio", "Gabriel Sgarbi", "Lais Crespo", "Giovanna Geloneze",
-                "Carla Gomes", "Sagai Yami", "Bibi Souza", "Simone Anjinho"
-        ));
-
         List<Pessoa> initialQueue = new ArrayList<>();
         _queueList.setValue(initialQueue);
 
@@ -155,6 +170,27 @@ public class CircoViewModel extends ViewModel {
             }
             _moveList.setValue(currentMoveList);
             notifyLocalModification();
+        }
+    }
+
+    public void updateInstructors(List<Object> row) {
+        if (row == null || row.size() < 2) {
+            return;
+        }
+
+        for (Object cell : row) {
+            String texto = cell.toString();
+            if (texto.contains("instrutores[")) {
+                String nomesLimpos = texto.substring(texto.indexOf("[") + 1, texto.lastIndexOf("]"))
+                        .replace("\"", "");
+                String[] nomesArray = nomesLimpos.split(",");
+
+                instructorNames.clear();
+                for (String nome : nomesArray) {
+                    instructorNames.add(nome.trim());
+                }
+                return;
+            }
         }
     }
 
