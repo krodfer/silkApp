@@ -609,11 +609,18 @@ public class TabelaFragment extends Fragment {
                         rawInfoRow.add(infoArr.get(k));
                     }
 
-                    if (!hasShownUpdateDialog && infoArr.length() > 2) {
-                        String remoteVersion = infoArr.optString(2, "");
-                        if (!VERSION.equals(remoteVersion)) {
-                            hasShownUpdateDialog = true;
-                            handler.post(this::showUpdateWarningDialog);
+                    if (!hasShownUpdateDialog) {
+                        for (int k = 0; k < infoArr.length(); k++) {
+                            String cellText = infoArr.optString(k, "").trim();
+
+                            if (cellText.startsWith("versao")) {
+
+                                if (!VERSION.equals(cellText)) {
+                                    hasShownUpdateDialog = true;
+                                    handler.post(this::showUpdateWarningDialog);
+                                }
+                                break;
+                            }
                         }
                     }
 
