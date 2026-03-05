@@ -24,24 +24,36 @@ android {
         buildConfig = true
     }
 
+    applicationVariants.all {
+        val variant = this
+        variant.outputs.all {
+            val output = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
+            val newName = "Aerial_${variant.versionName}.apk"
+            output.outputFileName = newName
+        }
+    }
+
     defaultConfig {
         applicationId = "com.example.ufabcirco"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0"
+        versionName = "versao1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GOOGLE_SHEETS_SERVICE_KEY", "\"$googleSheetsServiceKey\"")
+        buildConfigField("String", "VERSION_NAME", "\"$versionName\"")
     }
 
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            val apiKey = localProperties.getProperty("API_KEY") ?: ""
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "API_KEY", "\"$apiKey\"")
         }
         getByName("debug") {
             val apiKey = localProperties.getProperty("API_KEY") ?: ""
