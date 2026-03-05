@@ -48,7 +48,6 @@ import com.example.ufabcirco.model.Movimento;
 import com.example.ufabcirco.model.Pessoa;
 import com.example.ufabcirco.ui.custom.OutlineTextView;
 import com.example.ufabcirco.viewmodel.CircoViewModel;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -82,34 +81,39 @@ public class TabelaFragment extends Fragment {
     private static final String API_KEY = "AIzaSyC2Af7CSAT3Aees4gg1PMB3NmTPhdwVxUA";
     private static final String MOVES_RANGE = "Moves!A1:DZ100";
     private static final String TAG = "TabelaFragment";
+    private static final String VERSION = "versao1.0";
+    private static final String UPDATE_URL = "https://github.com/krodfer/silkApp";
 
     private CircoViewModel circoViewModel;
-    private LinearLayout mainTableContainer;
-    private LinearLayout fixedMoveListContainer;
-    private LinearLayout headerNamesContainer;
-    private HorizontalScrollView mainHorizontalScrollView;
-    private HorizontalScrollView headerNamesScrollView;
-    private ScrollView fixedMoveColumnScrollView;
-    private ScrollView mainTableScrollView;
-    private FloatingActionButton fabExport, fabImport;
-
-    private LinearLayout difficultyColumnContainer;
-    private LinearLayout dataColumnsContainer;
     private ProgressBar progressBar;
-
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private final Handler handler = new Handler(Looper.getMainLooper());
     private Context context;
 
-    private boolean isSyncing = false;
-    private boolean skipTableRebuild = false;
-    private long lastLocalModificationTime = 0;
-    private long lastRemoteSyncTime = 0;
+    private LinearLayout mainTableContainer;
+    private LinearLayout fixedMoveListContainer;
+    private LinearLayout difficultyColumnContainer;
+    private LinearLayout dataColumnsContainer;
+    private LinearLayout headerNamesContainer;
+
+    private HorizontalScrollView mainHorizontalScrollView;
+    private HorizontalScrollView headerNamesScrollView;
+
+    private ScrollView fixedMoveColumnScrollView;
+    private ScrollView mainTableScrollView;
 
     private final int SYNC_INTERVAL_MS = 3000;
     private final long SYNC_DEBOUNCE_MS = 1000;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final Handler handler = new Handler(Looper.getMainLooper());
+
+    private boolean isSyncing = false;
+    private boolean skipTableRebuild = false;
+    private boolean hasShownUpdateDialog = false;
+
+    private long lastLocalModificationTime = 0;
+    private long lastRemoteSyncTime = 0;
 
     private List<String> instructorNames = new ArrayList<>();
+    private List<Object> rawInfoRow = null;
 
     private final Runnable syncRunnable = new Runnable() {
         @Override
@@ -598,6 +602,24 @@ public class TabelaFragment extends Fragment {
                 JSONArray difficultiesArr = (movesValues.length() > 2) ? movesValues.getJSONArray(2) : new JSONArray();
                 JSONArray photosArr = (movesValues.length() > 3) ? movesValues.getJSONArray(3) : new JSONArray();
                 JSONArray infoArr = (movesValues.length() > 5) ? movesValues.getJSONArray(5) : new JSONArray();
+
+                if (movesValues.length() > 5) {
+                    rawInfoRow = new ArrayList<>();
+                    for (int k = 0; k < infoArr.length(); k++) {
+                        rawInfoRow.add(infoArr.get(k));
+                    }
+
+                    if (!hasShownUpdateDialog && infoArr.length() > 2) {
+                        String remoteVersion = infoArr.optString(2, "");
+                        if (!VERSION.equals(remoteVersion)) {
+                            hasShownUpdateDialog = true;
+                            handler.post(this::showUpdateWarningDialog);
+                        }
+                    }
+
+                    circoViewModel.updateInstructors(rawInfoRow);
+                }
+
                 JSONArray textsArr = (movesValues.length() > 6) ? movesValues.getJSONArray(6) : new JSONArray();
                 JSONArray variantsArr = (movesValues.length() > 7) ? movesValues.getJSONArray(7) : new JSONArray();
 
@@ -605,8 +627,6 @@ public class TabelaFragment extends Fragment {
                 for (int k = 0; k < infoArr.length(); k++) {
                     infoList.add(infoArr.get(k));
                 }
-
-                circoViewModel.updateInstructors(infoList);
 
                 for (int i = 1; i < moveNamesArr.length(); i++) {
                     String name = moveNamesArr.getString(i);
@@ -670,6 +690,24 @@ public class TabelaFragment extends Fragment {
         });
     }
 
+    private void showUpdateWarningDialog() {
+        if (context == null) return;
+
+        new AlertDialog.Builder(context)
+                .setTitle("Atualização Disponível!")
+                .setMessage("Sua versão (" + VERSION + ") está desatualizada.\n" +
+                        "Uma nova versão pode ser baixada")
+                .setPositiveButton("Baixar Agora", (dialog, which) -> {
+                    android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
+                    intent.setData(android.net.Uri.parse(UPDATE_URL));
+                    startActivity(intent);
+                })
+                .setNegativeButton("Depois", null)
+                .setCancelable(false)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
+    }
+
     private JSONObject readUrlContent(HttpURLConnection urlConnection) throws Exception {
         int responseCode = urlConnection.getResponseCode();
         if (responseCode == HttpURLConnection.HTTP_OK) {
@@ -698,12 +736,9 @@ public class TabelaFragment extends Fragment {
         List<Object> rowTypes = new ArrayList<>(); rowTypes.add("Tipo!");
         List<Object> rowDiffs = new ArrayList<>(); rowDiffs.add("Dificuldade!");
         List<Object> rowPhotos = new ArrayList<>(); rowPhotos.add("Foto!");
-        List<Object> rowInfos = new ArrayList<>(); rowInfos.add("Info!");
         List<Object> rowVideos = new ArrayList<>(); rowVideos.add("Video!");
         List<Object> rowTexts = new ArrayList<>(); rowTexts.add("Text!");
         List<Object> rowVars = new ArrayList<>(); rowVars.add("Variantes!");
-
-        rowInfos.add("instrutores" + instructorNames.toString().replace(" ", ""));
 
         for (Movimento m : moveList) {
             rowNames.add(m.getNome());
@@ -720,7 +755,13 @@ public class TabelaFragment extends Fragment {
         dataToWrite.add(rowDiffs);
         dataToWrite.add(rowPhotos);
         dataToWrite.add(rowVideos);
-        dataToWrite.add(rowInfos);
+
+        if (rawInfoRow != null && !rawInfoRow.isEmpty()) {
+            dataToWrite.add(rawInfoRow);
+        } else {
+            dataToWrite.add(Arrays.asList("Info!", "instrutores[]", VERSION));
+        }
+
         dataToWrite.add(rowTexts);
         dataToWrite.add(rowVars);
 
