@@ -8,6 +8,7 @@ plugins {
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
     localPropertiesFile.inputStream().use { inputStream ->
         localProperties.load(inputStream)
     }
@@ -41,6 +42,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        getByName("debug") {
+            val apiKey = localProperties.getProperty("API_KEY") ?: ""
+            buildConfigField("String", "API_KEY", "\"$apiKey\"")
         }
     }
 

@@ -78,7 +78,7 @@ import java.util.Map;
 public class TabelaFragment extends Fragment {
 
     private static final String SPREADSHEET_ID = "17g23jX5Su4rlUKW5Htq9pZRboW_5GxJieoYDlcTJe_w";
-    private static final String API_KEY = "AIzaSyC2Af7CSAT3Aees4gg1PMB3NmTPhdwVxUA";
+    private static final String API_KEY = BuildConfig.API_KEY;
     private static final String MOVES_RANGE = "Moves!A1:DZ100";
     private static final String TAG = "TabelaFragment";
     private static final String VERSION = "versao1.0";
