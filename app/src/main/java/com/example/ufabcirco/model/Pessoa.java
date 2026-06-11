@@ -17,12 +17,6 @@ public class Pessoa implements Serializable {
         this.moveStatus = new HashMap<>();
     }
 
-    public Pessoa(String id, String nome) {
-        this.id = id;
-        this.nome = nome;
-        this.moveStatus = new HashMap<>();
-    }
-
     public String getId() {
         return id;
     }
@@ -36,14 +30,6 @@ public class Pessoa implements Serializable {
             this.moveStatus = new HashMap<>();
         }
         return moveStatus;
-    }
-
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-
-    public void setMoveStatus(Map<String, Integer> moveStatus) {
-        this.moveStatus = moveStatus;
     }
 
     @Override

@@ -23,8 +23,6 @@ import java.util.HashMap;
 import java.util.Random;
 
 public class GaleriaFragment extends Fragment {
-
-    private static final String TAG = "GaleriaFragment";
     private CircoViewModel viewModel;
     private RecyclerView recyclerView;
     private GaleriaAdapter adapter;

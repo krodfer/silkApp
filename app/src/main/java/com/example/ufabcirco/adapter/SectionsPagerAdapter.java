@@ -41,8 +41,4 @@ public class SectionsPagerAdapter extends FragmentStateAdapter {
     public int getItemCount() {
         return tabTitles.length;
     }
-
-    public String getPageTitle(int position) {
-        return tabTitles[position];
-    }
 }

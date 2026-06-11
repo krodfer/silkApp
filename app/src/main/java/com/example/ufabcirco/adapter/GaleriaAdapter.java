@@ -18,7 +18,6 @@ import java.util.List;
 public class GaleriaAdapter extends RecyclerView.Adapter<GaleriaAdapter.PostViewHolder> {
 
     private List<Post> postList;
-    private static final String TAG = "GaleriaAdapter";
     private int playingPosition = -1;
 
     public GaleriaAdapter(List<Post> postList) {

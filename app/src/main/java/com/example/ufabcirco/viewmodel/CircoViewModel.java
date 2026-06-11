@@ -61,20 +61,10 @@ public class CircoViewModel extends ViewModel {
         return _localModificationEvent;
     }
 
-    private MutableLiveData<List<Object>> rowInfos = new MutableLiveData<>();
-    public LiveData<List<Object>> getRowInfos() {
-        return rowInfos;
-    }
-
     private final MutableLiveData<List<Post>> _allPosts = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<List<Post>> _filteredPosts = new MutableLiveData<>(new ArrayList<>());
     public LiveData<List<Post>> getFilteredPosts() {
         return _filteredPosts;
-    }
-
-    private final MutableLiveData<String> _galleryFilter = new MutableLiveData<>(null);
-    public LiveData<String> getGalleryFilter() {
-        return _galleryFilter;
     }
 
     private List<Post> shuffledPosts = new ArrayList<>();
@@ -112,49 +102,6 @@ public class CircoViewModel extends ViewModel {
         _localModificationEvent.setValue(true);
     }
 
-    public void cycleMoveStatus(String pessoaId, String move) {
-        if (pessoaId == null || move == null) {
-            return;
-        }
-
-        Pessoa pessoaToUpdate = pessoaMap.get(pessoaId);
-        if (pessoaToUpdate == null) {
-            return;
-        }
-
-        int currentStatus = pessoaToUpdate.getMoveStatus().getOrDefault(move, 0);
-        int nextStatus;
-
-        switch (currentStatus) {
-            case 0:
-                nextStatus = 1;
-                break;
-            case 1:
-                nextStatus = 2;
-                break;
-            case 2:
-                nextStatus = 3;
-                break;
-            case 3:
-                nextStatus = 0;
-                break;
-            default:
-                nextStatus = 0;
-                break;
-        }
-
-        pessoaToUpdate.getMoveStatus().put(move, nextStatus);
-        List<Pessoa> updatedMasterList = new ArrayList<>(Objects.requireNonNull(getMasterList().getValue()));
-        for(int i=0; i < updatedMasterList.size(); i++) {
-            if(updatedMasterList.get(i).getId().equals(pessoaId)) {
-                updatedMasterList.set(i, pessoaToUpdate);
-                break;
-            }
-        }
-        _masterList.setValue(updatedMasterList);
-        notifyLocalModification();
-    }
-
     public void addDificuldade(String moveName, int novaDificuldade) {
         if (moveName == null || novaDificuldade < 0 || novaDificuldade > 5) {
             return;
@@ -173,27 +120,6 @@ public class CircoViewModel extends ViewModel {
         }
     }
 
-    public void updateInstructors(List<Object> row) {
-        if (row == null || row.size() < 2) {
-            return;
-        }
-
-        for (Object cell : row) {
-            String texto = cell.toString();
-            if (texto.contains("instrutores[")) {
-                String nomesLimpos = texto.substring(texto.indexOf("[") + 1, texto.lastIndexOf("]"))
-                        .replace("\"", "");
-                String[] nomesArray = nomesLimpos.split(",");
-
-                instructorNames.clear();
-                for (String nome : nomesArray) {
-                    instructorNames.add(nome.trim());
-                }
-                return;
-            }
-        }
-    }
-
     public boolean isInstructor(String personName) {
         return instructorNames.contains(personName);
     }
@@ -201,12 +127,6 @@ public class CircoViewModel extends ViewModel {
     public void setMoveList(List<Movimento> moves) {
         if (!Objects.equals(_moveList.getValue(), moves)) {
             _moveList.setValue(moves);
-        }
-    }
-
-    public void loadFromLocalFile() {
-        if (_masterList.getValue() != null) {
-            _masterList.setValue(new ArrayList<>(_masterList.getValue()));
         }
     }
 
@@ -359,26 +279,6 @@ public class CircoViewModel extends ViewModel {
         return "SUCCESS";
     }
 
-    public void updateMoveStatus(String pessoaId, String moveName, int newStatus) {
-        List<Pessoa> currentList = _masterList.getValue();
-        if (currentList != null) {
-            int pessoaIndex = -1;
-            for (int i = 0; i < currentList.size(); i++) {
-                if (currentList.get(i).getId().equals(pessoaId)) {
-                    pessoaIndex = i;
-                    break;
-                }
-            }
-
-            if (pessoaIndex != -1) {
-                Pessoa pessoaToUpdate = currentList.get(pessoaIndex);
-                Map<String, Integer> statusMap = pessoaToUpdate.getMoveStatus();
-                statusMap.put(moveName, newStatus);
-                _masterList.setValue(currentList);
-            }
-        }
-    }
-
     public void removePersonFromQueue(Pessoa pessoa) {
         List<Pessoa> currentQueueList = _queueList.getValue();
         if (currentQueueList != null && pessoa != null) {
@@ -423,16 +323,6 @@ public class CircoViewModel extends ViewModel {
 
     private void notifyLocalModification() {
         _localModificationEvent.setValue(true);
-    }
-
-    public void setAllPosts(List<Post> allPosts) {
-        _allPosts.setValue(allPosts);
-        shuffleAndFilterPosts(null);
-    }
-
-    public void setGalleryFilter(String filter) {
-        _galleryFilter.setValue(filter);
-        shuffleAndFilterPosts(filter);
     }
 
     private void shuffleAndFilterPosts(String filter) {

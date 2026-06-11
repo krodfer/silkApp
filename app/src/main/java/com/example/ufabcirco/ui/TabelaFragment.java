@@ -88,7 +88,6 @@ public class TabelaFragment extends Fragment {
     private ProgressBar progressBar;
     private Context context;
 
-    private LinearLayout mainTableContainer;
     private LinearLayout fixedMoveListContainer;
     private LinearLayout difficultyColumnContainer;
     private LinearLayout dataColumnsContainer;
@@ -147,7 +146,6 @@ public class TabelaFragment extends Fragment {
 
         fixedMoveListContainer = view.findViewById(R.id.fixed_move_list_container);
         headerNamesContainer = view.findViewById(R.id.header_names_container);
-        mainTableContainer = view.findViewById(R.id.main_table_container);
         mainHorizontalScrollView = view.findViewById(R.id.main_horizontal_scrollview);
         fixedMoveColumnScrollView = view.findViewById(R.id.fixed_move_column_scroll_view);
         mainTableScrollView = view.findViewById(R.id.main_table_scroll_view);

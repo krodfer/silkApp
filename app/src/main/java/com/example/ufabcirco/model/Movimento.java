@@ -14,16 +14,6 @@ public class Movimento implements Serializable {
     private String texto;
     private List<String> variantes;
 
-    public Movimento(String nome, int tipo) {
-        this.nome = nome;
-        this.tipo = tipo;
-        this.dificuldades = new ArrayList<>();
-        this.fotos = new ArrayList<>();
-        this.videos = new ArrayList<>();
-        this.variantes = new ArrayList<>();
-        this.texto = "";
-    }
-
     public Movimento(String nome, int tipo, List<Integer> dificuldades, List<String> fotos, List<String> videos, String texto, List<String> variantes) {
         this.nome = nome;
         this.tipo = tipo;
@@ -32,16 +22,6 @@ public class Movimento implements Serializable {
         this.videos = videos != null ? new ArrayList<>(videos) : new ArrayList<>();
         this.texto = texto;
         this.variantes = variantes != null ? new ArrayList<>(variantes) : new ArrayList<>();
-    }
-
-    public Movimento(String nome, int tipo, List<Integer> dificuldades) {
-        this.nome = nome;
-        this.tipo = tipo;
-        this.dificuldades = dificuldades != null ? new ArrayList<>(dificuldades) : new ArrayList<>();
-        this.fotos = new ArrayList<>();
-        this.videos = new ArrayList<>();
-        this.variantes = new ArrayList<>();
-        this.texto = "";
     }
 
     public Movimento(String nome, int tipo, List<Integer> dificuldades, List<String> fotos, String texto, List<String> variantes) {
@@ -78,10 +58,6 @@ public class Movimento implements Serializable {
         return videos;
     }
 
-    public void setVideos(List<String> videos) {
-        this.videos = videos;
-    }
-
     public List<String> getVariantes() {
         return variantes;
     }
@@ -102,18 +78,6 @@ public class Movimento implements Serializable {
             sum += d;
         }
         return (double) sum / dificuldades.size();
-    }
-
-    public void setFotos(List<String> fotos) {
-        this.fotos = fotos;
-    }
-
-    public void setTexto(String texto){
-        this.texto = texto;
-    }
-
-    public void setVariantes(List<String> variantes) {
-        this.variantes = variantes;
     }
 
     @Override

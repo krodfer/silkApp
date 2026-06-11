@@ -38,20 +38,6 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
         setHasStableIds(true);
     }
 
-    public void updatePersonList(List<Pessoa> newPersonList) {
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new PessoaDiffCallback(this.pessoaList, newPersonList));
-        this.pessoaList.clear();
-        this.pessoaList.addAll(newPersonList);
-        diffResult.dispatchUpdatesTo(this);
-    }
-
-    public void updateMoveList(List<Movimento> newMoveList) {
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new MovimentoDiffCallback(this.moveList, newMoveList));
-        this.moveList.clear();
-        this.moveList.addAll(newMoveList);
-        diffResult.dispatchUpdatesTo(this);
-    }
-
     @Override
     public long getItemId(int position) {
         if (position >= 0 && position < moveList.size()) {
@@ -73,10 +59,7 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
             return;
         }
         Movimento move = moveList.get(position);
-
-        holder.movimentoTextView.setText(move.getNome());
         holder.dificuldadeTextView.setText(String.format("%.2f", move.getMediaDificuldade()));
-
         holder.statusCellsContainer.removeAllViews();
 
         Context context = holder.itemView.getContext();
@@ -113,15 +96,11 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
     }
 
     public static class TabelaViewHolder extends RecyclerView.ViewHolder {
-        private final OutlineTextView movimentoTextView;
         private final TextView dificuldadeTextView;
         private final LinearLayout statusCellsContainer;
-        private final OnMoveClickListener cellClickListener;
 
         public TabelaViewHolder(@NonNull View itemView, OnMoveClickListener cellClickListener) {
             super(itemView);
-            this.cellClickListener = cellClickListener;
-            movimentoTextView = itemView.findViewById(R.id.text_view_move_letter);
             dificuldadeTextView = itemView.findViewById(R.id.text_view_dificuldade);
             statusCellsContainer = itemView.findViewById(R.id.status_cells_container);
         }
@@ -167,36 +146,6 @@ public class TabelaAdapter extends RecyclerView.Adapter<TabelaAdapter.TabelaView
         @Override
         public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
             return oldList.get(oldItemPosition).getId().equals(newList.get(newItemPosition).getId());
-        }
-
-        @Override
-        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-            return oldList.get(oldItemPosition).equals(newList.get(newItemPosition));
-        }
-    }
-
-    class MovimentoDiffCallback extends DiffUtil.Callback {
-        private final List<Movimento> oldList;
-        private final List<Movimento> newList;
-
-        public MovimentoDiffCallback(List<Movimento> oldList, List<Movimento> newList) {
-            this.oldList = oldList;
-            this.newList = newList;
-        }
-
-        @Override
-        public int getOldListSize() {
-            return oldList.size();
-        }
-
-        @Override
-        public int getNewListSize() {
-            return newList.size();
-        }
-
-        @Override
-        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-            return Objects.equals(oldList.get(oldItemPosition).getNome(), newList.get(newItemPosition).getNome());
         }
 
         @Override
