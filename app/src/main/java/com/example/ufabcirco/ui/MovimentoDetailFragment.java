@@ -47,6 +47,7 @@ public class MovimentoDetailFragment extends DialogFragment {
     private List<String> allMedia = new ArrayList<>();
     private ProgressBar loadingSpinner;
     private TextView imageCounterTv;
+    private com.google.android.exoplayer2.ExoPlayer exoPlayer;
 
     public static MovimentoDetailFragment newInstance(Movimento m) {
         MovimentoDetailFragment fragment = new MovimentoDetailFragment();
@@ -109,6 +110,7 @@ public class MovimentoDetailFragment extends DialogFragment {
 
     private void setupMedia(View v) {
         ImageView imageView = v.findViewById(R.id.image_view_detail);
+        com.google.android.exoplayer2.ui.PlayerView playerView = v.findViewById(R.id.video_view_detail);
         imageCounterTv = v.findViewById(R.id.text_view_image_counter);
 
         android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
@@ -117,23 +119,35 @@ public class MovimentoDetailFragment extends DialogFragment {
         shape.setColor(Color.parseColor("#CC56114b"));
         imageCounterTv.setBackground(shape);
 
-        if (movimento.getFotos() != null) {
+        if (movimento.getFotos() != null)
+        {
             allMedia.addAll(movimento.getFotos());
         }
-
+        if (movimento.getVideos() != null){
+            allMedia.addAll(movimento.getVideos());
+        }
 
         if (allMedia.isEmpty()) {
             loadingSpinner.setVisibility(View.GONE);
             return;
         }
 
-        displayMedia(imageView);
+        displayMedia(imageView, playerView);
         updateImageCounter();
 
-        imageView.setOnClickListener(view -> {
+        View.OnClickListener clickListener = view -> {
             currentMediaIndex = (currentMediaIndex + 1) % allMedia.size();
-            displayMedia(imageView);
+            displayMedia(imageView, playerView);
             updateImageCounter();
+        };
+
+        imageView.setOnClickListener(clickListener);
+
+        playerView.setOnTouchListener((v1, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
+                clickListener.onClick(v1);
+            }
+            return true;
         });
     }
 
@@ -146,24 +160,59 @@ public class MovimentoDetailFragment extends DialogFragment {
         }
     }
 
-    private void displayMedia(ImageView iv) {
+    private void displayMedia(ImageView iv, com.google.android.exoplayer2.ui.PlayerView pv) {
         loadingSpinner.setVisibility(View.VISIBLE);
-        Glide.with(this)
-                .load(allMedia.get(currentMediaIndex))
-                .listener(new RequestListener<Drawable>() {
-                    @Override
-                    public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-                        loadingSpinner.setVisibility(View.GONE);
-                        return false;
-                    }
+        String url = allMedia.get(currentMediaIndex);
 
+        boolean isVideo = movimento.getVideos() != null && movimento.getVideos().contains(url);
+
+        if (isVideo) {
+            iv.setVisibility(View.GONE);
+            pv.setVisibility(View.VISIBLE);
+
+            if (exoPlayer == null) {
+                exoPlayer = new com.google.android.exoplayer2.ExoPlayer.Builder(requireContext()).build();
+                pv.setPlayer(exoPlayer);
+                exoPlayer.setRepeatMode(com.google.android.exoplayer2.Player.REPEAT_MODE_ALL);
+                exoPlayer.addListener(new com.google.android.exoplayer2.Player.Listener() {
                     @Override
-                    public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-                        loadingSpinner.setVisibility(View.GONE);
-                        return false;
+                    public void onPlaybackStateChanged(int playbackState) {
+                        if (playbackState == com.google.android.exoplayer2.Player.STATE_READY) {
+                            loadingSpinner.setVisibility(View.GONE);
+                        }
                     }
-                })
-                .into(iv);
+                });
+            }
+
+            com.google.android.exoplayer2.MediaItem mediaItem = com.google.android.exoplayer2.MediaItem.fromUri(url);
+            exoPlayer.setMediaItem(mediaItem);
+            exoPlayer.prepare();
+            exoPlayer.play();
+
+        } else {
+            if (exoPlayer != null && exoPlayer.isPlaying()) {
+                exoPlayer.stop();
+            }
+            pv.setVisibility(View.GONE);
+            iv.setVisibility(View.VISIBLE);
+
+            Glide.with(this)
+                    .load(url)
+                    .listener(new RequestListener<Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                            loadingSpinner.setVisibility(View.GONE);
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                            loadingSpinner.setVisibility(View.GONE);
+                            return false;
+                        }
+                    })
+                    .into(iv);
+        }
     }
 
     private void setupSections(View v) {
@@ -275,6 +324,15 @@ public class MovimentoDetailFragment extends DialogFragment {
             ssb.setSpan(clickableSpan, start, end - 2, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         return ssb;
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (exoPlayer != null) {
+            exoPlayer.release();
+            exoPlayer = null;
+        }
     }
 
     private void navigateToMove(String name) {

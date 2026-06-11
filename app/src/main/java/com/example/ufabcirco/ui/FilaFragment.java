@@ -156,7 +156,8 @@ public class FilaFragment extends Fragment {
 
     private void showProfileDialog(Pessoa pessoa) {
         if (pessoa != null && getParentFragmentManager() != null) {
-            ProfileMenuFragment.newInstance(pessoa).show(getParentFragmentManager(), "ProfileMenu");
+            boolean isPersonInstructor = circoViewModel.isInstructor(pessoa.getNome());
+            ProfileMenuFragment.newInstance(pessoa, isPersonInstructor).show(getParentFragmentManager(), "ProfileMenu");
         }
     }
 

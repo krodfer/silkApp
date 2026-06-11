@@ -764,33 +764,8 @@ public class TabelaFragment extends Fragment {
                 JSONArray typesArr = (movesValues.length() > 1) ? movesValues.getJSONArray(1) : new JSONArray();
                 JSONArray difficultiesArr = (movesValues.length() > 2) ? movesValues.getJSONArray(2) : new JSONArray();
                 JSONArray photosArr = (movesValues.length() > 3) ? movesValues.getJSONArray(3) : new JSONArray();
+                JSONArray videosArr = (movesValues.length() > 4) ? movesValues.getJSONArray(4) : new JSONArray();
                 JSONArray infoArr = (movesValues.length() > 5) ? movesValues.getJSONArray(5) : new JSONArray();
-
-                if (movesValues.length() > 5) {
-                    rawInfoRow = new ArrayList<>();
-                    for (int k = 0; k < infoArr.length(); k++) {
-                        rawInfoRow.add(infoArr.get(k));
-                    }
-
-                    if (!hasShownUpdateDialog) {
-                        for (int k = 0; k < infoArr.length(); k++) {
-                            String cellText = infoArr.optString(k, "").trim();
-
-                            if (cellText.startsWith("versao")) {
-
-                                if (!VERSION.equals(cellText)) {
-                                    hasShownUpdateDialog = true;
-                                    handler.post(this::showUpdateWarningDialog);
-                                }
-                                break;
-                            }
-                        }
-                    }
-
-                    circoViewModel.updateInstructors(rawInfoRow);
-                    setInstrutoresNames(rawInfoRow);
-                }
-
                 JSONArray textsArr = (movesValues.length() > 6) ? movesValues.getJSONArray(6) : new JSONArray();
                 JSONArray variantsArr = (movesValues.length() > 7) ? movesValues.getJSONArray(7) : new JSONArray();
 
@@ -801,14 +776,36 @@ public class TabelaFragment extends Fragment {
 
                 for (int i = 1; i < moveNamesArr.length(); i++) {
                     String name = moveNamesArr.getString(i);
+
+                    rawInfoRow = infoList;
+                    setInstrutoresNames(infoList);
+
+                    if (!hasShownUpdateDialog && infoArr.length() > 0) {
+                        for (int k = 0; k < infoArr.length(); k++) {
+                            String cellText = infoArr.optString(k, "").trim();
+
+                            if (cellText.startsWith("versao") || (k == 2 && !cellText.isEmpty())) {
+                                String sheetVersion = cellText.replace("versao", "").trim();
+                                String appVersion = VERSION.replace("versao", "").trim();
+
+                                if (!appVersion.equals(sheetVersion) && !sheetVersion.isEmpty()) {
+                                    hasShownUpdateDialog = true;
+                                    handler.post(this::showUpdateWarningDialog);
+                                }
+                                break;
+                            }
+                        }
+                    }
+
                     int type = typesArr.optInt(i, 0);
 
                     List<Integer> diffs = parseListInteger(difficultiesArr.optString(i, "[]"));
                     List<String> fotos = parseListString(photosArr.optString(i, "[]"));
+                    List<String> videos = parseListString(videosArr.optString(i, "[]"));
                     String texto = textsArr.optString(i, "");
                     List<String> variantes = parseListString(variantsArr.optString(i, "[]"));
 
-                    tempMovesMap.put(name, new Movimento(name, type, diffs, fotos, texto, variantes));
+                    tempMovesMap.put(name, new Movimento(name, type, diffs, fotos, videos, texto, variantes));
                 }
 
                 List<Movimento> sortedMoves = new ArrayList<>(tempMovesMap.values());
@@ -916,7 +913,7 @@ public class TabelaFragment extends Fragment {
             rowTypes.add(m.getTipo());
             rowDiffs.add(m.getDificuldades().toString());
             rowPhotos.add(m.getFotos().toString());
-            rowVideos.add("");
+            rowVideos.add(m.getVideos().toString());
             rowTexts.add(m.getTexto());
             rowVars.add(m.getVariantes().toString());
         }
@@ -1045,7 +1042,9 @@ public class TabelaFragment extends Fragment {
                 headerCell.setTextColor(Color.BLACK);
             }
 
-            headerCell.setOnClickListener(v -> showProfileDialog(person));
+            boolean isPersonInstructor = instructorNames.contains(person.getNome());
+            headerCell.setOnClickListener(v -> showProfileDialog(person, isPersonInstructor));
+
             headerNamesContainer.addView(headerCell);
         }
     }
@@ -1056,12 +1055,12 @@ public class TabelaFragment extends Fragment {
         handler.removeCallbacks(syncRunnable);
     }
 
-    private void showProfileDialog(Pessoa pessoa) {
+    private void showProfileDialog(Pessoa pessoa, boolean isInstructor) {
         if (context == null || pessoa == null) {
             return;
         }
         if (getParentFragmentManager() != null) {
-            ProfileMenuFragment.newInstance(pessoa).show(getParentFragmentManager(), "ProfileMenu");
+            ProfileMenuFragment.newInstance(pessoa, isInstructor).show(getParentFragmentManager(), "ProfileMenu");
         }
     }
 

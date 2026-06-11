@@ -10,6 +10,7 @@ public class Movimento implements Serializable {
     private int tipo;
     private List<Integer> dificuldades;
     private List<String> fotos;
+    private List<String> videos;
     private String texto;
     private List<String> variantes;
 
@@ -18,15 +19,17 @@ public class Movimento implements Serializable {
         this.tipo = tipo;
         this.dificuldades = new ArrayList<>();
         this.fotos = new ArrayList<>();
+        this.videos = new ArrayList<>();
         this.variantes = new ArrayList<>();
         this.texto = "";
     }
 
-    public Movimento(String nome, int tipo, List<Integer> dificuldades, List<String> fotos, String texto, List<String> variantes) {
+    public Movimento(String nome, int tipo, List<Integer> dificuldades, List<String> fotos, List<String> videos, String texto, List<String> variantes) {
         this.nome = nome;
         this.tipo = tipo;
         this.dificuldades = dificuldades != null ? new ArrayList<>(dificuldades) : new ArrayList<>();
         this.fotos = fotos != null ? new ArrayList<>(fotos) : new ArrayList<>();
+        this.videos = videos != null ? new ArrayList<>(videos) : new ArrayList<>();
         this.texto = texto;
         this.variantes = variantes != null ? new ArrayList<>(variantes) : new ArrayList<>();
     }
@@ -36,8 +39,19 @@ public class Movimento implements Serializable {
         this.tipo = tipo;
         this.dificuldades = dificuldades != null ? new ArrayList<>(dificuldades) : new ArrayList<>();
         this.fotos = new ArrayList<>();
+        this.videos = new ArrayList<>();
         this.variantes = new ArrayList<>();
         this.texto = "";
+    }
+
+    public Movimento(String nome, int tipo, List<Integer> dificuldades, List<String> fotos, String texto, List<String> variantes) {
+        this.nome = nome;
+        this.tipo = tipo;
+        this.dificuldades = dificuldades != null ? new ArrayList<>(dificuldades) : new ArrayList<>();
+        this.fotos = fotos != null ? new ArrayList<>(fotos) : new ArrayList<>();
+        this.videos = new ArrayList<>();
+        this.texto = texto;
+        this.variantes = variantes != null ? new ArrayList<>(variantes) : new ArrayList<>();
     }
 
     public String getNome() {
@@ -58,6 +72,14 @@ public class Movimento implements Serializable {
 
     public String getTexto() {
         return texto;
+    }
+
+    public List<String> getVideos() {
+        return videos;
+    }
+
+    public void setVideos(List<String> videos) {
+        this.videos = videos;
     }
 
     public List<String> getVariantes() {
@@ -86,7 +108,7 @@ public class Movimento implements Serializable {
         this.fotos = fotos;
     }
 
-    public void setTexto(String texto) {
+    public void setTexto(String texto){
         this.texto = texto;
     }
 
@@ -99,7 +121,13 @@ public class Movimento implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Movimento movimento = (Movimento) o;
-        return tipo == movimento.tipo && Objects.equals(nome, movimento.nome) && Objects.equals(dificuldades, movimento.dificuldades) && Objects.equals(fotos, movimento.fotos) && Objects.equals(texto, movimento.texto) && Objects.equals(variantes, movimento.variantes);
+        return tipo == movimento.tipo &&
+                Objects.equals(nome, movimento.nome) &&
+                Objects.equals(dificuldades, movimento.dificuldades) &&
+                Objects.equals(fotos, movimento.fotos) &&
+                Objects.equals(videos, movimento.videos) &&
+                Objects.equals(texto, movimento.texto) &&
+                Objects.equals(variantes, movimento.variantes);
     }
 
     @Override

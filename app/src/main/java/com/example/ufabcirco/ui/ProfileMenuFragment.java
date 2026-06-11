@@ -35,7 +35,9 @@ import java.util.Optional;
 public class ProfileMenuFragment extends DialogFragment {
 
     private static final String ARG_PESSOA = "pessoa";
+    private static final String ARG_IS_INSTRUCTOR = "is_instructor";
     private Pessoa pessoa;
+    private boolean isInstructor;
     private CircoViewModel viewModel;
 
     private ScaleGestureDetector scaleGestureDetector;
@@ -43,10 +45,11 @@ public class ProfileMenuFragment extends DialogFragment {
     private int baseWidth;
     private final double aspectRatio = 5.0 / 7.0;
 
-    public static ProfileMenuFragment newInstance(Pessoa pessoa) {
+    public static ProfileMenuFragment newInstance(Pessoa pessoa, boolean isInstructor) {
         ProfileMenuFragment fragment = new ProfileMenuFragment();
         Bundle args = new Bundle();
         args.putSerializable(ARG_PESSOA, pessoa);
+        args.putBoolean(ARG_IS_INSTRUCTOR, isInstructor);
         fragment.setArguments(args);
         return fragment;
     }
@@ -56,6 +59,7 @@ public class ProfileMenuFragment extends DialogFragment {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             pessoa = (Pessoa) getArguments().getSerializable(ARG_PESSOA);
+            isInstructor = getArguments().getBoolean(ARG_IS_INSTRUCTOR, false);
         }
         viewModel = new ViewModelProvider(requireActivity()).get(CircoViewModel.class);
         scaleGestureDetector = new ScaleGestureDetector(getContext(), new ScaleListener());
@@ -120,7 +124,7 @@ public class ProfileMenuFragment extends DialogFragment {
         if (pessoa != null) {
             nameTextView.setText(pessoa.getNome());
 
-            if (viewModel.isInstructor(pessoa.getNome())) {
+            if (isInstructor) {
                 roleTextView.setText("Instrutor");
                 roleTextView.setTextColor(Color.parseColor("#800080"));
             } else {
