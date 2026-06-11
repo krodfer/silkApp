@@ -104,13 +104,12 @@ public class TabelaFragment extends Fragment {
     private final long SYNC_DEBOUNCE_MS = 1000;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private int sortMode = 0;
+    private String searchQuery = "";
 
     private boolean isSyncing = false;
     private boolean skipTableRebuild = false;
     private boolean hasShownUpdateDialog = false;
-    private boolean isSortedAlphabetically = false;
-
-    private String searchQuery = "";
 
     private long lastLocalModificationTime = 0;
     private long lastRemoteSyncTime = 0;
@@ -204,13 +203,11 @@ public class TabelaFragment extends Fragment {
         view.findViewById(R.id.fab_add_movimento).setOnClickListener(v -> showAddMovimentoDialog());
 
         view.findViewById(R.id.fab_sort).setOnClickListener(v -> {
-            String[] options = {"Dificuldade (Padrão)", "Ordem Alfabética", "Buscar Movimento..."};
+            String[] options = {"Dificuldade (Padrão)", "Alfabética Total", "Alfabética por Blocos", "Buscar Movimento..."};
 
-            int checkedItem = 0;
-            if (!searchQuery.isEmpty()) {
-                checkedItem = 2;
-            } else if (isSortedAlphabetically) {
-                checkedItem = 1;
+            int checkedItem = sortMode;
+            if (searchQuery != null && !searchQuery.isEmpty()) {
+                checkedItem = 3;
             }
 
             AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -242,16 +239,24 @@ public class TabelaFragment extends Fragment {
 
             builder.setSingleChoiceItems(adapter, checkedItem, (dialog, which) -> {
                 if (which == 0) {
-                    isSortedAlphabetically = false;
+                    sortMode = 0;
                     searchQuery = "";
+                    Toast.makeText(context, "Ordenado por Dificuldade", Toast.LENGTH_SHORT).show();
                     applySortingAndUpdateTable();
                     dialog.dismiss();
                 } else if (which == 1) {
-                    isSortedAlphabetically = true;
+                    sortMode = 1;
                     searchQuery = "";
+                    Toast.makeText(context, "Ordem Alfabética Total", Toast.LENGTH_SHORT).show();
                     applySortingAndUpdateTable();
                     dialog.dismiss();
                 } else if (which == 2) {
+                    sortMode = 2;
+                    searchQuery = "";
+                    Toast.makeText(context, "Ordem Alfabética por Blocos", Toast.LENGTH_SHORT).show();
+                    applySortingAndUpdateTable();
+                    dialog.dismiss();
+                } else if (which == 3) {
                     dialog.dismiss();
                     showSearchDialog();
                 }
@@ -303,7 +308,8 @@ public class TabelaFragment extends Fragment {
             appendSection(ssb, "",  "• A coluna estrela é a dificuldade, uma média de como as pessoas julgaram os movimentos. Sinta-se livre para dar a sua nota e deixar mais justo, clicando na célula e escolhendo uma opção.\n" +
                                                 "• Toque no NOME do movimento para ver fotos, vídeos e descrição técnica.\n" +
                                                 "• Na descrição, nomes em destaque levam você para outros movimentos.\n" +
-                                                "• Use o [+] para cadastrar novos movimentos na lista.\n\n" +
+                                                "• Use o [+] para cadastrar novos movimentos na lista.\n" +
+                                                "• Use o a lupa para ordenar os movimentos ou buscar por algum.\n\n" +
                                                 "A coluna Movimento é separada em cores:");
 
             appendStatus(ssb, "\n   Quedas, ", "", Color.parseColor("#ff7700"));
@@ -354,7 +360,7 @@ public class TabelaFragment extends Fragment {
         builder.setCustomTitle(title);
 
         final EditText input = new EditText(context);
-        input.setHint("Digite o nome (ex: Inversão)");
+        input.setHint("Digite o nome");
         input.setTextColor(Color.parseColor("#56114b"));
         input.setHintTextColor(Color.parseColor("#9956114b"));
         input.setSingleLine(true);
@@ -395,7 +401,6 @@ public class TabelaFragment extends Fragment {
 
         progressBar.setVisibility(View.VISIBLE);
 
-
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             List<Movimento> displayList = new ArrayList<>();
 
@@ -410,8 +415,11 @@ public class TabelaFragment extends Fragment {
                 displayList.addAll(currentMoveList);
             }
 
-            if (isSortedAlphabetically) {
+            if (sortMode == 1) {
                 displayList.sort((m1, m2) -> m1.getNome().compareToIgnoreCase(m2.getNome()));
+            } else if (sortMode == 2) {
+                displayList.sort(Comparator.comparingInt(Movimento::getTipo).reversed()
+                        .thenComparing((m1, m2) -> m1.getNome().compareToIgnoreCase(m2.getNome())));
             } else {
                 displayList.sort(Comparator.comparingInt(Movimento::getTipo).reversed()
                         .thenComparing(Comparator.comparingDouble(Movimento::getMediaDificuldade).reversed()));
