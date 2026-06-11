@@ -156,7 +156,7 @@ public class CircoViewModel extends ViewModel {
     }
 
     public void addDificuldade(String moveName, int novaDificuldade) {
-        if (moveName == null || novaDificuldade < 1 || novaDificuldade > 5) {
+        if (moveName == null || novaDificuldade < 0 || novaDificuldade > 5) {
             return;
         }
 

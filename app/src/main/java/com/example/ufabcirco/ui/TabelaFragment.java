@@ -662,6 +662,11 @@ public class TabelaFragment extends Fragment {
                 ViewGroup.LayoutParams.WRAP_CONTENT
         );
 
+        popupView.findViewById(R.id.btn_star_0).setOnClickListener(v -> {
+            circoViewModel.addDificuldade(moveName, 0);
+            popupWindow.dismiss();
+        });
+
         popupView.findViewById(R.id.btn_star_1).setOnClickListener(v -> {
             circoViewModel.addDificuldade(moveName, 1);
             popupWindow.dismiss();
