@@ -108,6 +108,9 @@ public class TabelaFragment extends Fragment {
     private boolean isSyncing = false;
     private boolean skipTableRebuild = false;
     private boolean hasShownUpdateDialog = false;
+    private boolean isSortedAlphabetically = false;
+
+    private String searchQuery = "";
 
     private long lastLocalModificationTime = 0;
     private long lastRemoteSyncTime = 0;
@@ -174,12 +177,12 @@ public class TabelaFragment extends Fragment {
                 return;
             }
 
-            updateTable(currentPessoaList, currentMoveList);
+            applySortingAndUpdateTable();
         });
 
         circoViewModel.getMoveList().observe(getViewLifecycleOwner(), moves -> {
             currentMoveList = moves;
-            updateTable(currentPessoaList, currentMoveList);
+            applySortingAndUpdateTable();
         });
 
         fixedMoveColumnScrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
@@ -199,6 +202,69 @@ public class TabelaFragment extends Fragment {
         handler.post(syncRunnable);
 
         view.findViewById(R.id.fab_add_movimento).setOnClickListener(v -> showAddMovimentoDialog());
+
+        view.findViewById(R.id.fab_sort).setOnClickListener(v -> {
+            String[] options = {"Dificuldade (Padrão)", "Ordem Alfabética", "Buscar Movimento..."};
+
+            int checkedItem = 0;
+            if (!searchQuery.isEmpty()) {
+                checkedItem = 2;
+            } else if (isSortedAlphabetically) {
+                checkedItem = 1;
+            }
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+
+            TextView title = new TextView(context);
+            title.setText("Exibir por:");
+            title.setPadding(0, 48, 0, 24);
+            title.setGravity(Gravity.CENTER);
+            title.setTextSize(24);
+            title.setTextColor(Color.parseColor("#56114b"));
+            try {
+                title.setTypeface(ResourcesCompat.getFont(context, R.font.pacifico));
+            } catch (Exception e) {
+                title.setTypeface(null, Typeface.BOLD);
+            }
+            builder.setCustomTitle(title);
+
+            ArrayAdapter<String> adapter = new ArrayAdapter<String>(context, android.R.layout.select_dialog_singlechoice, options) {
+                @NonNull
+                @Override
+                public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                    View view = super.getView(position, convertView, parent);
+                    if (view instanceof android.widget.TextView) {
+                        ((android.widget.TextView) view).setTextColor(Color.parseColor("#56114b"));
+                    }
+                    return view;
+                }
+            };
+
+            builder.setSingleChoiceItems(adapter, checkedItem, (dialog, which) -> {
+                if (which == 0) {
+                    isSortedAlphabetically = false;
+                    searchQuery = "";
+                    applySortingAndUpdateTable();
+                    dialog.dismiss();
+                } else if (which == 1) {
+                    isSortedAlphabetically = true;
+                    searchQuery = "";
+                    applySortingAndUpdateTable();
+                    dialog.dismiss();
+                } else if (which == 2) {
+                    dialog.dismiss();
+                    showSearchDialog();
+                }
+            });
+
+            AlertDialog dialog = builder.create();
+
+            if (dialog.getWindow() != null) {
+                dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.parseColor("#f7ece0")));
+            }
+
+            dialog.show();
+        });
 
         view.findViewById(R.id.fab_help).setOnClickListener(v -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -271,13 +337,95 @@ public class TabelaFragment extends Fragment {
         return view;
     }
 
+    private void showSearchDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+
+        TextView title = new TextView(context);
+        title.setText("Buscar Movimento");
+        title.setPadding(0, 48, 0, 24);
+        title.setGravity(Gravity.CENTER);
+        title.setTextSize(24);
+        title.setTextColor(Color.parseColor("#56114b"));
+        try {
+            title.setTypeface(ResourcesCompat.getFont(context, R.font.pacifico));
+        } catch (Exception e) {
+            title.setTypeface(null, Typeface.BOLD);
+        }
+        builder.setCustomTitle(title);
+
+        final EditText input = new EditText(context);
+        input.setHint("Digite o nome (ex: Inversão)");
+        input.setTextColor(Color.parseColor("#56114b"));
+        input.setHintTextColor(Color.parseColor("#9956114b"));
+        input.setSingleLine(true);
+
+        LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(60, 20, 60, 20);
+        input.setLayoutParams(params);
+        layout.addView(input);
+
+        builder.setView(layout);
+
+        builder.setPositiveButton("Procurar", (dialog, which) -> {
+            searchQuery = input.getText().toString();
+            applySortingAndUpdateTable();
+        });
+
+        builder.setNegativeButton("Cancelar", (dialog, which) -> dialog.cancel());
+
+        AlertDialog dialog = builder.create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.parseColor("#f7ece0")));
+        }
+
+        dialog.show();
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.parseColor("#56114b"));
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.parseColor("#56114b"));
+    }
+
+    private void applySortingAndUpdateTable() {
+        if (currentPessoaList == null || currentMoveList == null){
+            return;
+        }
+
+        progressBar.setVisibility(View.VISIBLE);
+
+
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            List<Movimento> displayList = new ArrayList<>();
+
+            if (searchQuery != null && !searchQuery.trim().isEmpty()) {
+                String queryLower = searchQuery.trim().toLowerCase();
+                for (Movimento m : currentMoveList) {
+                    if (m.getNome().toLowerCase().contains(queryLower)) {
+                        displayList.add(m);
+                    }
+                }
+            } else {
+                displayList.addAll(currentMoveList);
+            }
+
+            if (isSortedAlphabetically) {
+                displayList.sort((m1, m2) -> m1.getNome().compareToIgnoreCase(m2.getNome()));
+            } else {
+                displayList.sort(Comparator.comparingInt(Movimento::getTipo).reversed()
+                        .thenComparing(Comparator.comparingDouble(Movimento::getMediaDificuldade).reversed()));
+            }
+
+            updateTable(currentPessoaList, displayList);
+        }, 150);
+    }
+
     private void updateTable(List<Pessoa> pessoaList, List<Movimento> moveList) {
         if (pessoaList == null || moveList == null || pessoaList.isEmpty() || moveList.isEmpty()) {
             progressBar.setVisibility(View.VISIBLE);
             return;
         }
-
-        progressBar.setVisibility(View.GONE);
 
         int savedScrollX = mainHorizontalScrollView.getScrollX();
         int savedScrollY = mainTableScrollView.getScrollY();
@@ -376,6 +524,8 @@ public class TabelaFragment extends Fragment {
 
         mainHorizontalScrollView.post(() -> mainHorizontalScrollView.scrollTo(savedScrollX, 0));
         mainTableScrollView.post(() -> mainTableScrollView.scrollTo(0, savedScrollY));
+
+        progressBar.setVisibility(View.GONE);
     }
 
     private void updateCellAppearance(TextView cell, int status) {

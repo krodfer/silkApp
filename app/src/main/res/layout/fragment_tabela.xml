@@ -133,4 +133,15 @@
         app:backgroundTint="#4CAF50"
         app:tint="@android:color/white" />
 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_sort"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="232dp"
+        app:srcCompat="@android:drawable/ic_menu_search"
+        app:backgroundTint="#FF9800"
+        app:tint="@android:color/white" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
