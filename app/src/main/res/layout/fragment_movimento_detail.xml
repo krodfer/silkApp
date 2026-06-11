@@ -109,6 +109,24 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:indeterminateTint="#56114b" />
+
+            <TextView
+                android:id="@+id/text_view_image_counter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="30dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="@font/quicksand"
+                android:visibility="gone"
+                android:clickable="false"
+                android:elevation="4dp" />
         </FrameLayout>
 
         <LinearLayout

@@ -46,6 +46,7 @@ public class MovimentoDetailFragment extends DialogFragment {
     private int currentMediaIndex = 0;
     private List<String> allMedia = new ArrayList<>();
     private ProgressBar loadingSpinner;
+    private TextView imageCounterTv;
 
     public static MovimentoDetailFragment newInstance(Movimento m) {
         MovimentoDetailFragment fragment = new MovimentoDetailFragment();
@@ -108,8 +109,18 @@ public class MovimentoDetailFragment extends DialogFragment {
 
     private void setupMedia(View v) {
         ImageView imageView = v.findViewById(R.id.image_view_detail);
-        if (movimento.getFotos() != null) allMedia.addAll(movimento.getFotos());
-        //if (movimento.getVideos() != null) allMedia.addAll(movimento.getVideos());
+        imageCounterTv = v.findViewById(R.id.text_view_image_counter);
+
+        android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
+        shape.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+        shape.setCornerRadius(50f);
+        shape.setColor(Color.parseColor("#CC56114b"));
+        imageCounterTv.setBackground(shape);
+
+        if (movimento.getFotos() != null) {
+            allMedia.addAll(movimento.getFotos());
+        }
+
 
         if (allMedia.isEmpty()) {
             loadingSpinner.setVisibility(View.GONE);
@@ -117,11 +128,22 @@ public class MovimentoDetailFragment extends DialogFragment {
         }
 
         displayMedia(imageView);
+        updateImageCounter();
 
         imageView.setOnClickListener(view -> {
             currentMediaIndex = (currentMediaIndex + 1) % allMedia.size();
             displayMedia(imageView);
+            updateImageCounter();
         });
+    }
+
+    private void updateImageCounter() {
+        if (allMedia.size() < 1) {
+            imageCounterTv.setVisibility(View.GONE);
+        } else {
+            imageCounterTv.setVisibility(View.VISIBLE);
+            imageCounterTv.setText((currentMediaIndex + 1) + " / " + allMedia.size());
+        }
     }
 
     private void displayMedia(ImageView iv) {
