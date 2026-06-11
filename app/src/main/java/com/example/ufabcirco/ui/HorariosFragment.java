@@ -17,7 +17,7 @@ import com.example.ufabcirco.R;
 
 public class HorariosFragment extends Fragment {
 
-    private static final String TARGET_URL = "https://ufabcirco.my.canva.site/oficinas";
+    private static final String TARGET_URL = "https://ufabcirco.my.canva.site/oficinas/#page-1";
     private static final String ALLOWED_DOMAIN = "ufabcirco.my.canva.site";
 
     public static HorariosFragment newInstance() {

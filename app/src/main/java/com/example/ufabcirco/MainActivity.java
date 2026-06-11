@@ -48,5 +48,8 @@ public class MainActivity extends AppCompatActivity {
 
             tab.setCustomView(customView);
         }).attach();
+
+        viewPager.setCurrentItem(1, false);
     }
 }
+
