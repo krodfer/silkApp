@@ -8,12 +8,13 @@ import androidx.viewpager2.adapter.FragmentStateAdapter;
 
 import com.example.ufabcirco.ui.FilaFragment;
 import com.example.ufabcirco.ui.TabelaFragment;
-import com.example.ufabcirco.ui.PlaceholderFragment;
 import com.example.ufabcirco.ui.GaleriaFragment;
+import com.example.ufabcirco.ui.HorariosFragment;
+import com.example.ufabcirco.ui.PlaceholderFragment;
 
 public class SectionsPagerAdapter extends FragmentStateAdapter {
 
-    private final String[] tabTitles = {"Fila", "Tabela", "Galeria"};
+    private final String[] tabTitles = {"Fila", "Tabela", "Galeria", "Horários"};
 
     public SectionsPagerAdapter(@NonNull FragmentManager fragmentManager, @NonNull Lifecycle lifecycle) {
         super(fragmentManager, lifecycle);
@@ -28,6 +29,8 @@ public class SectionsPagerAdapter extends FragmentStateAdapter {
             case 1:
                 return TabelaFragment.newInstance();
             case 2:
+                return HorariosFragment.newInstance();
+            case 3:
                 return GaleriaFragment.newInstance();
             default:
                 return PlaceholderFragment.newInstance("Erro: Tab desconhecida");

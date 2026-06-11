@@ -31,10 +31,11 @@ public class MainActivity extends AppCompatActivity {
         int[] tabIcons = {
                 R.drawable.ic_fila,
                 R.drawable.ic_tabela,
+                R.drawable.ic_horarios,
                 R.drawable.ic_galeria
         };
 
-        String[] titulos = {"Fila", "Tabela", "Galeria"};
+        String[] titulos = {"Fila", "Tabela", "Horários", "Galeria"};
 
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
             View customView = getLayoutInflater().inflate(R.layout.item_aba_custom, null);

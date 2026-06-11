@@ -82,7 +82,7 @@ public class TabelaFragment extends Fragment {
     private static final String MOVES_RANGE = "Moves!A1:DZ100";
     private static final String TAG = "TabelaFragment";
     private static final String VERSION = BuildConfig.VERSION_NAME;
-    private static final String UPDATE_URL = "https://github.com/krodfer/silkApp";
+    private static final String UPDATE_URL = "https://github.com/krodfer/silkApp/releases";
 
     private CircoViewModel circoViewModel;
     private ProgressBar progressBar;
