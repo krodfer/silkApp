@@ -775,6 +775,7 @@ public class TabelaFragment extends Fragment {
                     }
 
                     circoViewModel.updateInstructors(rawInfoRow);
+                    setInstrutoresNames(rawInfoRow);
                 }
 
                 JSONArray textsArr = (movesValues.length() > 6) ? movesValues.getJSONArray(6) : new JSONArray();
@@ -936,6 +937,9 @@ public class TabelaFragment extends Fragment {
     }
 
     public void setInstrutoresNames(List<Object> dados) {
+        instructorNames.clear();
+        if (dados == null) return;
+
         for (Object item : dados) {
             String texto = item.toString();
 
@@ -944,7 +948,9 @@ public class TabelaFragment extends Fragment {
                 String[] nomesArray = nomesLimpos.split(",");
 
                 for (String nome : nomesArray) {
-                    instructorNames.add(nome.trim());
+                    if (!nome.trim().isEmpty()) {
+                        instructorNames.add(nome.trim());
+                    }
                 }
             }
         }
@@ -1019,7 +1025,7 @@ public class TabelaFragment extends Fragment {
             headerCell.setBackgroundColor(Color.WHITE);
             headerCell.setText(person.getNome());
 
-            if (circoViewModel.isInstructor(person.getNome())) {
+            if (instructorNames.contains(person.getNome())) {
                 headerCell.setTextColor(Color.parseColor("#800080"));
                 headerCell.setShadowLayer(2.5f, 0, 0, Color.BLACK);
             } else {
