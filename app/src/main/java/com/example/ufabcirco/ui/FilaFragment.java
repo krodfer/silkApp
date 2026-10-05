@@ -225,19 +225,23 @@ public class FilaFragment extends Fragment {
     }
 
     private void showMultipleMatchesDialog(List<Pessoa> matches) {
-        if(getContext() == null) {
+        if (getContext() == null){
             return;
         }
-        CharSequence[] names = matches.stream().map(Pessoa::getNome).toArray(CharSequence[]::new);
 
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Múltiplos resultados. Escolha um:")
-                .setItems(names, (dialog, which) -> {
-                    Pessoa selectedPerson = matches.get(which);
-                    addPersonToQueue(selectedPerson);
-                })
-                .setNegativeButton("Cancelar", null)
-                .show();
+        String[] nomes = matches.stream().map(Pessoa::getNome).toArray(String[]::new);
+        AlertDialog.Builder builder = CircoDialogBuilder.create(requireContext(), "Selecione a pessoa");
+
+        builder.setItems(nomes, (dialog, which) -> {
+            addPersonToQueue(matches.get(which));
+        });
+
+        builder.setNegativeButton("Cancelar", null);
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        CircoDialogBuilder.fixColors(dialog);
     }
 
     private void addPersonToQueue(Pessoa pessoa) {

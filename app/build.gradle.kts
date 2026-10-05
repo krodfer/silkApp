@@ -38,7 +38,7 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "versao1.1"
+        versionName = "versao1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GOOGLE_SHEETS_SERVICE_KEY", "\"$googleSheetsServiceKey\"")

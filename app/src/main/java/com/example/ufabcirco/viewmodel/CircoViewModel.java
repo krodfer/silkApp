@@ -195,27 +195,14 @@ public class CircoViewModel extends ViewModel {
         if (name == null || name.trim().isEmpty() || master == null) {
             return new ArrayList<>();
         }
-        String trimmedSearchName = name.trim();
+
+        List<String> searchParts = Arrays.asList(name.trim().toLowerCase().split("\\s+"));
+
         return master.stream()
                 .filter(person -> {
-                    String[] nameParts = person.getNome().split("\\s+");
-                    if (nameParts.length == 0) {
-                        return false;
-                    }
+                    List<String> nameParts = Arrays.asList(person.getNome().toLowerCase().split("\\s+"));
 
-                    String firstName = nameParts[0];
-                    if (firstName.equalsIgnoreCase(trimmedSearchName)) {
-                        return true;
-                    }
-
-                    if (nameParts.length > 1) {
-                        String lastName = nameParts[nameParts.length - 1];
-                        if (lastName.equalsIgnoreCase(trimmedSearchName)) {
-                            return true;
-                        }
-                    }
-
-                    return false;
+                    return Collections.indexOfSubList(nameParts, searchParts) != -1;
                 })
                 .collect(Collectors.toList());
     }

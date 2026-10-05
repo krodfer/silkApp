@@ -79,7 +79,7 @@ public class TabelaFragment extends Fragment {
 
     private static final String SPREADSHEET_ID = "17g23jX5Su4rlUKW5Htq9pZRboW_5GxJieoYDlcTJe_w";
     private static final String API_KEY = BuildConfig.API_KEY;
-    private static final String MOVES_RANGE = "Moves!A1:DZ100";
+    private static final String MOVES_RANGE = "Moves!A1:DZ";
     private static final String TAG = "TabelaFragment";
     private static final String VERSION = BuildConfig.VERSION_NAME;
     private static final String UPDATE_URL = "https://github.com/krodfer/silkApp/releases";
